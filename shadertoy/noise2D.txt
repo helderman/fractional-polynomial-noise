@@ -1,0 +1,123 @@
+// -------------------- Parameters -----------------------
+
+// 1.0 = 3rd degree polynomial (G0 continuity)
+// 2.0 = 5rd degree polynomial (G1 continuity)
+// 3.0 = 7th degree polynomial (G2 continuity)
+// 4.68 is the optimum for eliminating grid lines that might show up as directional artifacts.
+// 4.67970975809363 is probably a better estimation; it's one of the roots of this equation:
+// 1/2 + (3/4)^n = (7/16)^n + (15/16)^n
+// Notice the almost flat line as desmos.com/calculator plots the following function:
+// y=\sum_{i=-4}^{4}\max\left(0,\left(1-\left(\frac{x-i}{2}\right)^{2}\right)^{4.68}\right)
+const float continuity = 4.68;
+
+// Number of rand() calls per pixel = 4 * overlap.x * overlap.y
+const ivec2 overlap = ivec2(2);
+
+// Seed the PRNG differently for a1, a2, b (the polynomial's coefficients)
+const vec3 seed = vec3(3.0, 2.0, 0.0);
+
+// -------------------- PRNG -----------------------
+
+// Generates 3 pseudo-random numbers in parallel; enough for 1 grid cell on 1 layer
+vec3 rand(in mat3 a)
+{
+    // https://stackoverflow.com/questions/4200224/random-noise-functions-for-glsl
+    return fract(sin(a * vec3(12.9898, 78.233, 111.1)) * 43758.5453) * 2.0 - 1.0;
+}
+
+// -------------------- Noise calculation -----------------------
+
+// Function (x,y) -> (a1*x + a2*y + b) * (1 - x^2)^n * (1 - y^2)^n
+float polynomial(in vec3 coeff, in vec2 pos)
+{
+    vec2 p = 1.0 - pos * pos;
+    return dot(coeff, vec3(pos, 1.0)) * pow(p.x * p.y, continuity);
+}
+
+// Calculates the height for a single layer
+float layer(in vec2 pos, in vec2 alignment)
+{
+    vec2 aligned = floor(pos * vec2(overlap) - alignment) / vec2(overlap);
+    return polynomial(rand(mat3(vec3(aligned.x), vec3(aligned.y), seed)), pos - aligned);
+}
+
+// Calculates the total height, using all layers
+float height(in vec2 pos)
+{
+    float h = 0.0;
+    ivec2 count;
+    for (count.y = -overlap.y; count.y < overlap.y; count.y++)
+    {
+        for (count.x = -overlap.x; count.x < overlap.x; count.x++)
+        {
+            h += layer(pos, vec2(count));
+        }
+    }
+    return h / sqrt(float(overlap.x * overlap.y));
+}
+
+// -------------------- Some demos -----------------------
+
+// Mix up RGB color
+const vec3 rgbmix = vec3(0.0, 0.33, 0.67);
+
+// Notice the noise looks a bit repetitive around time = 1150.
+// Needs investigation, might be due to the implementation of rand().
+vec4 flat_grey(in vec2 fragCoord)
+{
+    vec2 pos = fragCoord / 60.0 + 1.0 * iTime;
+    float h = height(pos) * 0.2 + 0.5;
+    return vec4(vec3(h), 1.0);
+}
+
+vec4 plasma(in vec2 fragCoord)
+{
+    vec2 pos = fragCoord / 100.0;
+    float h = height(pos + iTime) + height(pos - iTime);
+    return vec4(mod(h + rgbmix, 1.0), 1.0);
+}
+
+vec4 tunnel(in vec2 fragCoord)
+{
+    vec2 p = fragCoord - 0.5 * iResolution.xy;
+    float a = sin(atan(p.y, p.x) * 10.0 + iTime);
+    float d = 1200.0 / length(p);
+    float h = height(vec2(a - 0.2 * iTime, d + iTime));
+    return vec4(mod(h + rgbmix, 1.0) * d * 0.25, 1.0);
+}
+
+vec4 cross_section(in vec2 fragCoord)
+{
+    float m = 0.25 * iResolution.y;
+    float t = fragCoord.x / 200.0 + 1.0 * iTime;
+    float h = height(vec2(t, 1.0 * iTime));
+    float b = (fragCoord.y > m * (h + 1.0) ? 0.1 : 1.0) - (fract(t) + fract(fragCoord.y / m)) / 16.0;
+    return vec4(0.0, b, 0.5 - 0.5 * b, 1.0);
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord)
+{
+    vec2 div = vec2(0.5);
+    if (fragCoord.y < div.y * iResolution.y)
+    {
+        if (fragCoord.x < div.x * iResolution.x)
+        {
+            fragColor = cross_section(fragCoord);
+        }
+        else
+        {
+            fragColor = plasma(fragCoord);
+        }
+    }
+    else
+    {
+        if (fragCoord.x < div.x * iResolution.x)
+        {
+            fragColor = tunnel(fragCoord);
+        }
+        else
+        {
+            fragColor = flat_grey(fragCoord);
+        }
+    }
+}

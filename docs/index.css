@@ -1,0 +1,46 @@
+div.formula {
+	margin-left: 2em;
+}
+
+div.formula span.par1 {
+	font-size: 140%;
+}
+
+div.formula span.par1 sup {
+	font-size: 70%;
+}
+
+div.formula span.par2 {
+	font-size: 180%;
+}
+
+div.formula span.par2 sup {
+	font-size: 70%;
+}
+
+div.formula div.sum {
+	display: inline-table;
+	line-height: 1;
+	text-align: center;
+	vertical-align: middle;
+}
+
+div.formula div.sum div {
+	font-size: 80%;
+}
+
+div.formula div.sum div.sigma {
+	font-size: 400%;
+}
+
+div.formula table {
+	display: inline-table;
+	text-align: center;
+	vertical-align: middle;
+	border-collapse: collapse;
+	font-size: 80%;
+}
+
+div.formula table td.denominator {
+	border-top: solid thin;
+}
