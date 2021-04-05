@@ -16,3 +16,8 @@ and copy/paste [this script](shadertoy/noise2D.txt) into a fresh shader.
 
 I would love to share the shader myself on shadertoy.com,
 but I'm having trouble verifying my email address there. Sorry.
+
+## C implementation (April 2021)
+
+Generates a [raw PGM](https://en.wikipedia.org/wiki/Netpbm#File_formats) file,
+which can be opened by [GIMP](https://en.wikipedia.org/wiki/GIMP).

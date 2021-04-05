@@ -7,41 +7,61 @@
 <body>
 <h1>Fractional Polynomial Noise</h1>
 <p>
-Copyright &copy; 2021 Ruud Helderman
-&lt;<a href="mailto:r.helderman@hccnet.nl">r.helderman@hccnet.nl</a>&gt;
-</p>
-<p>
+Ruud Helderman
+&lt;<a href="mailto:r.helderman@hccnet.nl">r.helderman@hccnet.nl</a>&gt;<br />
+April 2021<br />
 <a href="../LICENSE">MIT licensed</a>
 </p>
 <h2>Purpose</h2>
 <p>
 Experimental algorithm for
-<a href="https://en.wikipedia.org/wiki/Gradient_noise">gradient noise</a>.
-I am using this for real-time
-<a href="https://en.wikipedia.org/wiki/Procedural_generation">procedural generation</a>
-of (practically) infinite landscapes in animations and video games.
-I could have implemented an existing algorithm like
-<a href="https://en.wikipedia.org/wiki/Perlin_noise">Perlin noise</a> or
-<a href="https://en.wikipedia.org/wiki/Simplex_noise">Simplex noise</a>,
-but I found the complexity in those algorithms alarming.
-I am looking for noise, not the Mona Lisa.
-</p>
-<p>
-After many failed experiments, I found something that looked really good.
-It has many similarities with
+<a href="https://en.wikipedia.org/wiki/Gradient_noise">gradient noise</a>,
+with the ambition of being simpler than
 <a href="https://en.wikipedia.org/wiki/Perlin_noise">Perlin noise</a>,
-but it is simpler,
-and it appears to be inherently free from directional artifacts.
+without the directional artifacts that plague other naive algorithms.
+Should be suitable for games and simple animations.
 </p>
+<h4>Advantages:</h4>
+<ul>
+<li>
+Simple algorithm; very easy to implement.
+</li>
+<li>
+No noticeable directional artifacts
+(assuming it is backed by a decent hash function).
+But that's just based on my (probably biased) visual impression.
+I still need to do a thorough spectrum analysis.
+</li>
+</ul>
+<h4>Disadvantages:</h4>
+<ul>
+<li>
+Not <a href="https://en.wikipedia.org/wiki/Bandlimiting">band-limited</a>.
+If this is an issue, then please consider using
+<a href="https://en.wikipedia.org/wiki/Wavelet_noise">wavelet noise</a>
+instead.
+</li>
+<li>
+Computationally expensive in higher dimensions:
+complexity is <i>O</i>(<i>n</i> 2<sup><i>n</i></sup>)
+for <i>n</i> dimensions.
+If this is an issue, then please consider using
+<a href="https://en.wikipedia.org/wiki/Simplex_noise">simplex noise</a> or
+<a href="https://en.wikipedia.org/wiki/OpenSimplex_noise">OpenSimplex noise</a>
+instead.
+</li>
+</ul>
 <h2>Example</h2>
 <p>
-Click the image to see it in full size.
+Click the image to see it in full size (1024 &times; 1024 pixels).
 </p>
 <p>
-<a href="noise2D.png"><img src="noise2D.png" alt="Demo of Fractional Polynomial Noise" style="width:25%" /></a>
+<a href="noise2D.png"><img src="noise2D.png" alt="Demo of Fractional Polynomial Noise" width="256" height="256" /></a>
 </p>
 <p>
-The image is the result of the following formula:
+The image has been produced by
+<a href="../c/noise2D.c">this C program</a>,
+which implements the following formula:
 </p>
 <div class="formula">
 <i>h</i>(<i>x</i>, <i>y</i>) =
@@ -88,32 +108,38 @@ or (more likely) the same function with 3 different salts.
 <h2>Explanation</h2>
 <p>
 We start off really simple: a one-dimensional curve, defined by a
-<a href="https://en.wikipedia.org/wiki/Piecewise">piecewise function</a>.
-There is an infinite number of subdomains, all of which have the same length.
+<a href="https://en.wikipedia.org/wiki/Piecewise">piecewise function</a>,
+with every subdomain having the same length.
 Every endpoint (where two subdomains meet) has a pseudo-random height.
 It is straightforward to connect the dots with straight lines.
-The result is a 'curve' with G0 continuity:
+The result is a 'curve' with G<sup>0</sup> continuity:
 the function is continous (there are no 'jumps'),
 but steepness (the function's
 <a href="https://en.wikipedia.org/wiki/Derivative">derivative</a>)
-is <i>not</i> continuous, making the line jaggy.
+is <i>not</i> continuous, making the line jagged.
 </p>
 <p>
-The next step is obvious:
-we give every endpoint a pseudo-random steepness,
+<a href="g0.png"><img src="g0.png" alt="G0 coninuous curve" width="236" height="232" /></a>
+</p>
+<p>
+To make the line smooth, we give every endpoint a pseudo-random steepness,
 and obey that steepness as we connect endpoints.
-This is easy enough with third-degree
-<a href="https://en.wikipedia.org/wiki/Polynomial">polynomials</a>.
-The resulting curve has G1 continuity:
+This is easy enough by using third-degree
+<a href="https://en.wikipedia.org/wiki/Polynomial">polynomials</a>
+instead of straight lines to connect the endpoints.
+The resulting curve has G<sup>1</sup> continuity:
 both the height function and its first derivative are continuous,
 but the second derivative is not.
 </p>
 <p>
-We can make the curve even smoother by aiming for G2 continuity.
+<a href="g1.png"><img src="g1.png" alt="G1 coninuous curve" width="236" height="232" /></a>
+</p>
+<p>
+We can make the curve even smoother by aiming for G<sup>2</sup> continuity.
 Again, this is not too hard:
 we add yet another psuedo-random number to every endpoint,
 this time representing the desired value for the <i>second</i> derivative,
-and we use a fifth-degree polynomial to connect the endpoints.
+and we use a <i>fifth</i>-degree polynomial to connect the endpoints.
 </p>
 <p>
 All this is nothing new:
@@ -124,26 +150,27 @@ in the way it interpolated between gradients
 But it was at this point that I was wondering:
 is it really necessary to involve so many pseudo-random numbers
 in the calculation of a single subfunction?
-Four for G1 continuity, six for G2, and so on.
+Four for G<sup>1</sup> continuity, six for G<sup>2</sup>, and so on.
 Please note, I am not worried about the performance of these calculations.
 I am just concerned about the complexity of any such formula.
 I like to keep things as simple as possible.
 </p>
 <p>
 Let's try something else:
-polynomials that are always zero at their endpoints.
-Zero height, zero derivative,
-and depending on our demands, one or more higher derivatives that are zero.
-The random factor will be in the <i>center</i> of the domain:
-there we will pseudo-randomly choose a height and a steepness.
-Nothing more.
-That way, only two pseudo-random numbers are needed to calculate a subfunction.
-And those numbers belong to a single subdomain,
+let's use polynomials that are always zero at their endpoints.
+Zero height, zero derivative, and depending on our demands,
+one or more higher-order derivatives that are zero.
+Nothing random there.
+The random factor will be in the <i>center</i> of the domain.
+There we will pseudo-randomly choose a height and a steepness,
+but we will not explicitly specify the higher-order derivatives.
+So only two pseudo-random numbers are needed to calculate a single subfunction.
+And every such number belongs to a single subdomain,
 rather than being shared between two neighboring subdomains.
 Nice and simple.
 </p>
 <p>
-For example, let's say we want G1 continuity.
+For example, let's say we want G<sup>1</sup> continuity.
 Imagine for subdomain (&minus;1, 1), we have picked two pseudo-random numbers:
 <i>a</i> for the steepness and <i>b</i> for the height
 at the center of the subdomain (<i>x</i> = 0).
@@ -159,52 +186,74 @@ We need to find a subfunction <i>f</i> that satisfies the following conditions:
 	<li><i>f '</i> (1) = <i>f '</i> (&minus;1) = 0</li>
 </ul>
 <p>
-The following third-degree polynomial does just that:
+<a href="tangent.png"><img src="tangent.png" alt="Tangent" width="453" height="336" /></a>
+</p>
+<p>
+The following fifth-degree polynomial does just that:
 </p>
 <div class="formula">
 <i>f</i> (<i>x</i>) =
-(<i>a x</i> + <i>b</i>) (1 &minus; <i>x</i><sup>2</sup>)
+(<i>a x</i> + <i>b</i>) (1 &minus; <i>x</i><sup>2</sup>)<sup>2</sup>
 </div>
 <p>
 Yes, I am aware there will be a 'valley' at every endpoint.
+</p>
+<p>
+<a href="valleys.png"><img src="valleys.png" alt="Valleys" width="330" height="100" /></a>
+</p>
+<p>
 We will try to compensate by using overlapping subdomains
 (using the sum of the overlapping subfunctions as the height).
+</p>
+<p>
+<a href="overlap.png"><img src="overlap.png" alt="Overlapping curves" width="330" height="100" /></a>
+</p>
+<p>
 One would expect: the more overlap, the better the valleys will be filled up.
 But too much overlap is computationally expensive
 and may make the landscape bland, due to prominent peaks being averaged out.
 </p>
 <p>
-The easiest way to see the effect of overlap is to use constant coefficients across the entire landscape, rather than pseudo-random numbers.
-With <i>a</i> = 0 and <i>b</i> = 2, we see identical 'hills',
-with no distractions coming from 'random' variations:
+The easiest way to see if overlap effectively fills the valleys,
+is by temporarily disabling randomness:
+use constant, 'flat' coefficients across the entire landscape,
+rather than pseudo-random numbers.
+With <i>a</i> = 0 and <i>b</i> = 1, we see identical, symmetric 'hills',
+with no distractions coming from 'random' variations.
 </p>
 <p>
 An overlap of 50% seems insufficient to fill the holes:
 </p>
 <p>
+<a href="overlap50.png"><img src="overlap50.png" alt="Overlap 50%" width="327" height="182" /></a>
+</p>
+<p>
 75% looks a lot better:
 </p>
 <p>
-This basically means every piece of land is covered by 4 polynomials.
+<a href="overlap75.png"><img src="overlap75.png" alt="Overlap 75%" width="354" height="60" /></a>
+</p>
+<p>
+75% basically means every piece of land is covered by 4 polynomials.
 Of course, this immediately eliminates the advantage of
 having to calculate fewer random numbers (especially in higher dimensions),
-but like I said earlier, right now I'm more worried about complexity.
+but as stated before, right now I'm more concerned with algorithmic complexity.
 And overlaps are not complex.
 </p>
 <p>
 Let's see if we can improve our polynomial.
-To achieve G2 continuity,
+To achieve G<sup>2</sup> continuity,
 we need the following condition in addition to the ones listed earlier:
 </p>
 <ul>
 	<li><i>f ''</i> (1) = <i>f ''</i> (&minus;1) = 0</li>
 </ul>
 <p>
-This time we need a fifth-degree polynomial to satisfy all conditions:
+This time we need a 7th-degree polynomial to satisfy all conditions:
 </p>
 <div class="formula">
 <i>f</i> (<i>x</i>) =
-(<i>a x</i> + <i>b</i>) (1 &minus; <i>x</i><sup>2</sup>)<sup>2</sup>
+(<i>a x</i> + <i>b</i>) (1 &minus; <i>x</i><sup>2</sup>)<sup>3</sup>
 </div>
 <p>
 Notice this looks <i>very</i> similar to our previous polynomial.
@@ -215,16 +264,22 @@ It isn't hard to guess how to generalize this for higher levels of continuity:
 (<i>a x</i> + <i>b</i>) (1 &minus; <i>x</i><sup>2</sup>)<sup><i>n</i></sup>
 </div>
 <p>
-This basically means we can increase smoothness as much as we like.
+This basically means we can increase smoothness as far as we want.
 But that does not necessarily make the curve better.
 In fact, at higher values of <i>n</i>, it becomes worse.
-Look what happens with the overlapping polynomials as we increase <i>n</i>:
+Look what happens with the overlapping polynomials at <i>n</i> = 9:
+</p>
+<p>
+<a href="overlap9.png"><img src="overlap9.png" alt="Overlap at n=9" width="250" height="65" /></a>
 </p>
 <p>
 This is because the increasing demand on smoothness at the endpoints,
 makes the 'valleys' around the endpoints wider, and the hills narrower.
-In general, the flatter the plot,
-the lesser the chance of seeing directional artifacts like grid lines in 2D.
+Bumps in our 1D curve are likely to show up as grid lines in 2D.
+We should strive to make that curve as straight as possible
+to prevent directional artifacts.
+</p>
+<p>
 It appears 3, 4 and 5 are good values for <i>n</i>.
 But where is the optimum? It has to be somewhere between 4 and 5.
 Well, what's keeping us from using a non-integer <i>n</i>?
@@ -233,7 +288,10 @@ within the subdomain (&minus;1, 1),
 so there is no problem in having a fractional exponent.
 </p>
 <p>
-With some experimenting, it's easy to find the optimum is around 4.68:
+With some experimenting, it's easy to find the optimum is around 4.68.
+</p>
+<p>
+<a href="overlap468.png"><img src="overlap468.png" alt="Overlap at n=4.68" width="222" height="136" /></a>
 </p>
 <p>
 For a more accurate number, let's assume (I haven't proven this)
@@ -276,9 +334,23 @@ This results in the following equation:
 </div>
 <p>
 One of the roots of this equation is 4.67970975809363 (approximately),
-an excellent match for what we already observed.
+close enough to what we already observed.
+Please be aware that even with this optimal <i>n</i>,
+the function will not be a straight line.
 </p>
-<h2>1D</h2>
+<p>
+<a href="scaled468.png"><img src="scaled468.png" alt="Overlap at n=4.68" width="363" height="135" /></a>
+</p>
+<p>
+Please note the <i>Y</i>-axis has been scaled in the curve above;
+the bumps have been exaggerated by a factor 300.
+(1 &minus; <i>x</i><sup>2</sup>)<sup><i>n</i></sup>
+will swing between 1.5204188 and 1.5205878 (approximately).
+With careful statistical analysis,
+it might be possible to detect the resulting directional artifacts,
+but I doubt that those grid lines will be visible to the naked eye.
+</p>
+<h3>1D function</h3>
 <p>
 After scaling <i>x</i> so that subdomains are at unit-length distances,
 we come to this formula:
@@ -305,10 +377,12 @@ we come to this formula:
 </div>
 <p>
 Notice the &Sigma; operator always sums 4 terms,
-meaning subsequent subdomains overlap for 75%.
-The number of hash calculations is 8 per unit-length.
+as subsequent subdomains overlap for 75%.
+The number of hash calculations
+(<i>p</i><sub>1</sub> and <i>p</i><sub>2</sub> together)
+is 8 per unit length.
 </p>
-<h2>2D</h2>
+<h3>2D function</h3>
 <p>
 We already saw this formula at the start of this document:
 </p>
@@ -351,22 +425,44 @@ We already saw this formula at the start of this document:
 Overlap is 4 &times; 4 = 16.
 The number of hash calculations per unit square is 3 &times; 16 = 48.
 </p>
-<h2>Higher dimensions</h2>
+<h3>Higher dimensions</h3>
 <p>
-Extending the formula to higher dimensions is straightforward,
+Extending the formula to higher dimensions should be straightforward,
 but the number of hash calculations grows exponentially with the dimension.
 <a href="https://en.wikipedia.org/wiki/Perlin_noise">Perlin noise</a>
-has a similar issue.
+has the same problem.
 You may be better off with
 <a href="https://en.wikipedia.org/wiki/Simplex_noise">Simplex noise</a> or
 <a href="https://en.wikipedia.org/wiki/OpenSimplex_noise">OpenSimplex noise</a>.
+</p>
+<h2>Implementations</h2>
+<p>
+You can plot the 1D curve in
+<a href="https://desmos.com/calculator">Desmos</a>
+using the following stack of formulas:
+</p>
+<ul style="font-family:monospace">
+<li>h\left(x\right)=\sum_{i=\operatorname{floor}\left(x\right)-1}^{\operatorname{floor}\left(x\right)+2}\left(p_{1}\left(i\right)\left(x-i\right)+p_{2}\left(i\right)\right)\left(1-\left(\frac{x-i}{2}\right)^{2}\right)^{4.67970975809363}</li>
+<li>p_{1}\left(i\right)=l_{1}\left[\operatorname{mod}\left(i,\operatorname{length}\left(l_{1}\right)\right)+1\right]</li>
+<li>p_{2}\left(i\right)=l_{2}\left[\operatorname{mod}\left(i,\operatorname{length}\left(l_{2}\right)\right)+1\right]</li>
+<li>l_{1}=\operatorname{random}\left(100\right)</li>
+<li>l_{2}=\operatorname{random}\left(100\right)</li>
+</ul>
+<p>
+Implementations in 2D can be found on:<br />
+<a href="https://helderman.github.io/fractional-polynomial-noise/">https://helderman.github.io/fractional-polynomial-noise/</a>
 </p>
 <h2>Disclaimer</h2>
 <p>
 I am not a mathematician,
 I am a software engineer with just enough knowledge and experience
 to understand some of the challenges in this area.
-I am open for criticism; please let me know if I missed something.
+I am open for criticism; please let me know if I missed anything.
+</p>
+<h2>Credits</h2>
+<p>
+All diagrams have been made using
+<a href="https://www.desmos.com/calculator">Desmos</a>.
 </p>
 </body>
 </html>
