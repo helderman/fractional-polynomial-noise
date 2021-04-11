@@ -18,7 +18,7 @@ Experimental algorithm for
 <a href="https://en.wikipedia.org/wiki/Gradient_noise">gradient noise</a>,
 with the ambition of being simpler than
 <a href="https://en.wikipedia.org/wiki/Perlin_noise">Perlin noise</a>,
-without the directional artifacts that plague other naive algorithms.
+with less directional artifacts.
 Should be suitable for games and simple animations.
 </p>
 <h4>Advantages:</h4>
@@ -36,7 +36,8 @@ I still need to do a thorough spectrum analysis.
 <h4>Disadvantages:</h4>
 <ul>
 <li>
-Not <a href="https://en.wikipedia.org/wiki/Bandlimiting">band-limited</a>.
+Not <a href="https://en.wikipedia.org/wiki/Bandlimiting">band-limited</a>;
+I guess low frequencies will be present.
 If this is an issue, then please consider using
 <a href="https://en.wikipedia.org/wiki/Wavelet_noise">wavelet noise</a>
 instead.
@@ -49,6 +50,11 @@ If this is an issue, then please consider using
 <a href="https://en.wikipedia.org/wiki/Simplex_noise">simplex noise</a> or
 <a href="https://en.wikipedia.org/wiki/OpenSimplex_noise">OpenSimplex noise</a>
 instead.
+</li>
+<li>
+The algorithm contains an exponentiation,
+which may be computationally expensive on some platforms.
+(May be optimized using a lookup table.)
 </li>
 </ul>
 <h2>Example</h2>
@@ -64,50 +70,106 @@ The image has been produced by
 which implements the following formula:
 </p>
 <div class="formula">
-<i>h</i>(<i>x</i>, <i>y</i>) =
+<i>g</i>(<i>x</i>, <i>y</i>) =
 <div class="sum">
-	<div>&lfloor;<i>x</i>&rfloor; + 2</div>
+	<div><i>d</i> &minus; 1</div>
 	<div class="sigma">&Sigma;</div>
-	<div><i>i</i> = &lfloor;<i>x</i>&rfloor; &minus; 1</div>
+	<div><i>i</i> = 0</div>
 </div>
-&nbsp;
 <div class="sum">
-	<div>&lfloor;<i>y</i>&rfloor; + 2</div>
+	<div><i>d</i> &minus; 1</div>
 	<div class="sigma">&Sigma;</div>
-	<div><i>j</i> = &lfloor;<i>y</i>&rfloor; &minus; 1</div>
+	<div><i>j</i> = 0</div>
 </div>
-<span class="par2">(</span>
-<i>p</i><sub>1</sub>(<i>i</i>, <i>j</i>) (<i>x</i> &minus; <i>i</i>) +
-<i>p</i><sub>2</sub>(<i>i</i>, <i>j</i>) (<i>y</i> &minus; <i>j</i>) +
-<i>p</i><sub>3</sub>(<i>i</i>, <i>j</i>)
-<span class="par2">)</span>
-<span class="par2">(</span>1 &minus;
-<span class="par1">(</span>
+<i>f</i>
+(<i>d</i> <span class="par1">&lfloor;</span>
 <table>
-	<tr><td><i>x</i> &minus; <i>i</i></td></tr>
-	<tr><td class="denominator">2</td></tr>
+	<tr><td><i>x</i> + <i>i</i></td></tr>
+	<tr><td class="denominator"><i>d</i></td></tr>
 </table>
-<span class="par1">)<sup>2</sup></span>
-<span class="par2">)<sup><i>n</i></sup></span>
-<span class="par2">(</span>1 &minus;
-<span class="par1">(</span>
+<span class="par1">&rfloor;</span>
+&minus; <i>i</i>,
+<i>d</i> <span class="par1">&lfloor;</span>
 <table>
-	<tr><td><i>y</i> &minus; <i>j</i></td></tr>
-	<tr><td class="denominator">2</td></tr>
+	<tr><td><i>y</i> + <i>j</i></td></tr>
+	<tr><td class="denominator"><i>d</i></td></tr>
 </table>
-<span class="par1">)<sup>2</sup></span>
-<span class="par2">)<sup><i>n</i></sup></span>
+<span class="par1">&rfloor;</span>
+&minus; <i>j</i>,
+2<span class="par1">{</span>
+<table>
+	<tr><td><i>x</i> + <i>i</i></td></tr>
+	<tr><td class="denominator"><i>d</i></td></tr>
+</table>
+<span class="par1">}</span> &minus; 1,
+2<span class="par1">{</span>
+<table>
+	<tr><td><i>y</i> + <i>j</i></td></tr>
+	<tr><td class="denominator"><i>d</i></td></tr>
+</table>
+<span class="par1">}</span> &minus; 1)
+</div>
+<div class="formula">
+<i>f</i> (<i>i</i>, <i>j</i>, <i>x</i>, <i>y</i>) =
+<span class="par1">(</span>
+<i>h</i><sub>1</sub>(<i>i</i>, <i>j</i>) <i>x</i> +
+<i>h</i><sub>2</sub>(<i>i</i>, <i>j</i>) <i>y</i> +
+<i>h</i><sub>3</sub>(<i>i</i>, <i>j</i>)
+<span class="par1">) (</span>
+1 &minus; <i>x</i><sup>2</sup>
+<span class="par1">)<sup><i>c</i></sup> (</span>
+1 &minus; <i>y</i><sup>2</sup>
+<span class="par1">)<sup><i>c</i></sup></span>
 </div>
 <p>
-where <i>n</i> = 4.67970975809363 (far from obvious; explained below)
-and <i>p</i><sub>1</sub>, <i>p</i><sub>2</sub>, <i>p</i><sub>3</sub>
+where <i>d</i> = 4,
+<i>c</i> = 4.67970975809363 (far from obvious; explained below)
+and <i>h</i><sub>1</sub>, <i>h</i><sub>2</sub>, <i>h</i><sub>3</sub>
 are hash functions generating pseudo-random numbers in the range (&minus;1, 1).
 These can be three different functions,
 or (more likely) the same function with 3 different salts.
 </p>
-<h2>Explanation</h2>
+<h2>Introduction</h2>
 <p>
-We start off really simple: a one-dimensional curve, defined by a
+To be able to truly appreciate
+<a href="https://en.wikipedia.org/wiki/Perlin_noise">Perlin noise</a>,
+you have to know where we were coming from.
+Imagine you would like to
+<a href="https://en.wikipedia.org/wiki/Procedural_generation">randomly generate</a>
+a
+<a href="https://en.wikipedia.org/wiki/Heightmap">heightmap</a>,
+to be used for
+<a href="https://en.wikipedia.org/wiki/Terrain_rendering">terrain rendering</a>
+in a video game.
+It is easy enough to
+<a href="https://en.wikipedia.org/wiki/Pseudorandom_number_generator">generate some random numbers</a>,
+then
+<a href="https://en.wikipedia.org/wiki/Interpolation">interpolate</a>
+between them.
+The resulting
+<a href="https://en.wikipedia.org/wiki/Value_noise">value noise</a>
+may look smooth enough in a one-dimensional curve,
+but in two dimensions, you will clearly see the grid lines,
+giving our noise an artificial look.
+</p>
+<p>
+<a href="https://en.wikipedia.org/wiki/Ken_Perlin">Ken Perlin</a>
+proved that
+<a href="https://en.wikipedia.org/wiki/Gradient_noise">gradient noise</a>
+is much more suitable for the job.
+It's the clever math behind it that makes
+<a href="https://en.wikipedia.org/wiki/Perlin_noise">Perlin noise</a>
+and
+<a href="https://en.wikipedia.org/wiki/Simplex_noise">Simplex noise</a>
+everybody's darling.
+But it's the same math that always made me feel uncomfortable.
+The interpolations, the coordinate skewing...
+It made me wonder: isn't there a simpler, more 'direct' function?
+</p>
+<h2>Subdomains</h2>
+<p>
+In an attempt to keep it readable for a broad audience,
+I will start off really simple: a one-dimensional curve, defined by a
 <a href="https://en.wikipedia.org/wiki/Piecewise">piecewise function</a>,
 with every subdomain having the same length.
 Every endpoint (where two subdomains meet) has a pseudo-random height.
@@ -155,16 +217,17 @@ Please note, I am not worried about the performance of these calculations.
 I am just concerned about the complexity of any such formula.
 I like to keep things as simple as possible.
 </p>
+<h2>'Grounded' subfunctions</h2>
 <p>
 Let's try something else:
-let's use polynomials that are always zero at their endpoints.
+let's use polynomials that are always 'grounded' at their endpoints.
 Zero height, zero derivative, and depending on our demands,
 one or more higher-order derivatives that are zero.
 Nothing random there.
-The random factor will be in the <i>center</i> of the domain.
+The random factor will be in the <i>center</i> of the subdomain.
 There we will pseudo-randomly choose a height and a steepness,
 but we will not explicitly specify the higher-order derivatives.
-So only two pseudo-random numbers are needed to calculate a single subfunction.
+So only two pseudo-random numbers are needed to define a single subfunction.
 And every such number belongs to a single subdomain,
 rather than being shared between two neighboring subdomains.
 Nice and simple.
@@ -195,61 +258,21 @@ The following fifth-degree polynomial does just that:
 <i>f</i> (<i>x</i>) =
 (<i>a x</i> + <i>b</i>) (1 &minus; <i>x</i><sup>2</sup>)<sup>2</sup>
 </div>
+<h2>Smoothness</h2>
 <p>
-Yes, I am aware there will be a 'valley' at every endpoint.
-</p>
-<p>
-<a href="valleys.png"><img src="valleys.png" alt="Valleys" width="330" height="100" /></a>
-</p>
-<p>
-We will try to compensate by using overlapping subdomains
-(using the sum of the overlapping subfunctions as the height).
-</p>
-<p>
-<a href="overlap.png"><img src="overlap.png" alt="Overlapping curves" width="330" height="100" /></a>
-</p>
-<p>
-One would expect: the more overlap, the better the valleys will be filled up.
-But too much overlap is computationally expensive
-and may make the landscape bland, due to prominent peaks being averaged out.
-</p>
-<p>
-The easiest way to see if overlap effectively fills the valleys,
-is by temporarily disabling randomness:
-use constant, 'flat' coefficients across the entire landscape,
-rather than pseudo-random numbers.
-With <i>a</i> = 0 and <i>b</i> = 1, we see identical, symmetric 'hills',
-with no distractions coming from 'random' variations.
-</p>
-<p>
-An overlap of 50% seems insufficient to fill the holes:
-</p>
-<p>
-<a href="overlap50.png"><img src="overlap50.png" alt="Overlap 50%" width="327" height="182" /></a>
-</p>
-<p>
-75% looks a lot better:
-</p>
-<p>
-<a href="overlap75.png"><img src="overlap75.png" alt="Overlap 75%" width="354" height="60" /></a>
-</p>
-<p>
-75% basically means every piece of land is covered by 4 polynomials.
-Of course, this immediately eliminates the advantage of
-having to calculate fewer random numbers (especially in higher dimensions),
-but as stated before, right now I'm more concerned with algorithmic complexity.
-And overlaps are not complex.
-</p>
-<p>
-Let's see if we can improve our polynomial.
-To achieve G<sup>2</sup> continuity,
-we need the following condition in addition to the ones listed earlier:
+A polynomial is always perfectly smooth,
+but continuity is limited at the endpoints,
+where two different polynomials meet.
+We can make the endpoints smoother with the following condition,
+in addition to the conditions listed earlier.
+This will give us G<sup>2</sup> continuity:
 </p>
 <ul>
 	<li><i>f ''</i> (1) = <i>f ''</i> (&minus;1) = 0</li>
 </ul>
 <p>
-This time we need a 7th-degree polynomial to satisfy all conditions:
+It is easy to prove
+the following 7<sup>th</sup>-degree polynomial satisfies all conditions:
 </p>
 <div class="formula">
 <i>f</i> (<i>x</i>) =
@@ -261,171 +284,605 @@ It isn't hard to guess how to generalize this for higher levels of continuity:
 </p>
 <div class="formula">
 <i>f</i> (<i>x</i>) =
-(<i>a x</i> + <i>b</i>) (1 &minus; <i>x</i><sup>2</sup>)<sup><i>n</i></sup>
+(<i>a x</i> + <i>b</i>) (1 &minus; <i>x</i><sup>2</sup>)<sup><i>c</i></sup>
 </div>
 <p>
-This basically means we can increase smoothness as far as we want.
+This basically means we can increase smoothness as far as we want,
+simply by increasing <i>c</i>.
 But that does not necessarily make the curve better.
-In fact, at higher values of <i>n</i>, it becomes worse.
-Look what happens with the overlapping polynomials at <i>n</i> = 9:
+So far, I have ignored the 'valleys' between the different polynomials:
 </p>
 <p>
-<a href="overlap9.png"><img src="overlap9.png" alt="Overlap at n=9" width="250" height="65" /></a>
+<a href="valleys.png"><img src="valleys.png" alt="Valleys" width="330" height="100" /></a>
 </p>
 <p>
-This is because the increasing demand on smoothness at the endpoints,
+These 'holes' in our 1D curve will show up as grid lines in 2D noise.
+We will try to compensate by using overlapping subdomains,
+taking the sum of the overlapping subfunctions
+to produce a function without valleys:
+</p>
+<p>
+<a href="overlap.png"><img src="overlap.png" alt="Overlapping curves" width="330" height="100" /></a>
+</p>
+<p>
+The problem is, this is more difficult for higher values of <i>c</i>.
+Look what happens to the previous picture when <i>c</i> = 9:
+</p>
+<p>
+<a href="overlap9.png"><img src="overlap9.png" alt="Overlap at c=9" width="250" height="65" /></a>
+</p>
+<p>
+This is because the increasing demand for smoothness at the endpoints,
 makes the 'valleys' around the endpoints wider, and the hills narrower.
-Bumps in our 1D curve are likely to show up as grid lines in 2D.
+</p>
+<h2>Overlapping subdomains</h2>
+<p>
+So how effective is this idea of overlapping subdomains?
+This is best witnessed when temporarily disabling randomness.
+Use constant, 'flat' coefficients across the entire landscape,
+rather than pseudo-random numbers.
+With <i>a</i> = 0 and <i>b</i> = 1, we see identical, symmetric 'hills',
+with no distractions coming from 'random' variations.
+</p>
+<div class="formula">
+<i>f</i> (<i>x</i>) =
+<span class="par1">(</span>
+1 &minus; <i>x</i><sup>2</sup>
+<span class="par1">)<sup><i>c</i></sup></span>
+</div>
+<p>
+We define a new function <i>g</i>
+that transforms <i>x</i> to give us a more convenient domain [0, 1].
+</p>
+<div class="formula">
+<i>g</i>(<i>x</i>) =
+<i>f</i> (2<i>x</i> &minus; 1)
+</div>
+<p>
+This domain [0, 1] perfectly fits {<i>x</i>}
+(the fraction of <i>x</i>,
+defined as <i>x</i> &minus; &lfloor;<i>x</i>&rfloor;)
+to extend the domain and make <i>g</i> periodic, with period 1.
+</p>
+<div class="formula">
+<i>g</i>(<i>x</i>) =
+<i>f</i> (2{<i>x</i>} &minus; 1)
+</div>
+<p>
+We can stretch this curve, making its period <i>d</i>.
+We can also change its phase by <i>i</i>.
+</p>
+<div class="formula">
+<i>g</i>(<i>x</i>) =
+<i>f</i>
+(2<span class="par1">{</span>
+<table>
+	<tr><td><i>x</i> + <i>i</i></td></tr>
+	<tr><td class="denominator"><i>d</i></td></tr>
+</table>
+<span class="par1">}</span> &minus; 1)
+</div>
+<p>
+Now we can overlap <i>d</i> curves with phase 0, 1, ... , <i>d</i> &minus; 1.
+</p>
+<div class="formula">
+<i>g</i>(<i>x</i>) =
+<div class="sum">
+	<div><i>d</i> &minus; 1</div>
+	<div class="sigma">&Sigma;</div>
+	<div><i>i</i> = 0</div>
+</div>
+<i>f</i>
+(2<span class="par1">{</span>
+<table>
+	<tr><td><i>x</i> + <i>i</i></td></tr>
+	<tr><td class="denominator"><i>d</i></td></tr>
+</table>
+<span class="par1">}</span> &minus; 1)
+</div>
+<p>
+For example, <i>d</i> = 2 means every subdomain has a length of 2.
+Subdomains are at integer intervals (<i>i</i>),
+so neighboring subfunctions overlap for 50%.
+Every (infinitesimal) piece of the X-axis is covered by exactly 2 subfunctions.
+</p>
+<p>
+From the looks of it, this is insufficient to fill the holes.
 We should strive to make that curve as straight as possible
-to prevent directional artifacts.
+to prevent directional artifacts when employing the formulas in 2D.
 </p>
 <p>
-It appears 3, 4 and 5 are good values for <i>n</i>.
-But where is the optimum? It has to be somewhere between 4 and 5.
-Well, what's keeping us from using a non-integer <i>n</i>?
-(1 &minus; <i>x</i><sup>2</sup>) is always positive
-within the subdomain (&minus;1, 1),
-so there is no problem in having a fractional exponent.
+<a href="overlap50.png"><img src="overlap50.png" alt="Overlap 50%" width="327" height="182" /></a>
 </p>
 <p>
-With some experimenting, it's easy to find the optimum is around 4.68.
+<i>d</i> = 4 looks a lot better:
 </p>
 <p>
-<a href="overlap468.png"><img src="overlap468.png" alt="Overlap at n=4.68" width="222" height="136" /></a>
+<a href="overlap75.png"><img src="overlap75.png" alt="Overlap 75%" width="354" height="60" /></a>
 </p>
 <p>
-For a more accurate number, let's assume (I haven't proven this)
-the optimum is the point where the two extremes of overlap
-have the same height:
+Obviously, the more overlap, the better the valleys will be filled up.
+But too much overlap is computationally expensive
+and may make the landscape bland, due to prominent peaks being averaged out.
+</p>
+<h2>Tuning the parameters</h2>
+<p>
+Fortunately, we have another parameter in our formula:
+it appears the continuity <i>c</i> plays an important role
+in shaping the curves in such a way that they even out each other.
+To flatten the curve,
+you need to 'tune' the two parameters <i>d</i> and <i>c</i>.
+</p>
+<p>
+The image above was made with <i>d</i> = 4, <i>c</i> = 2.
+It's pretty good already,
+but it becomes even flatter when increasing <i>c</i> to 4 or 5.
+Above 6, valleys become visible again.
+This was already explained above:
+the 'hills' become narrower as <i>c</i> increases,
+and eventually they cannot even fill up 25% of their domain,
+meaning that an overlap <i>d</i> of 4 is no longer sufficient.
+</p>
+<p>
+Basically we are trying to minimize the range of function <i>g</i>,
+i.e. the difference between the two extremes of <i>g</i>.
+Extremes can be found at the following points on the X-axis.
 </p>
 <ul>
-<li>where endpoint and center overlap, e.g. <i>x</i> = 0</li>
-<li>halfway between two points as described above, e.g. <i>x</i> = 0.25</li>
+<li>At an endpoint, e.g. <i>x</i> = 0.</li>
+<li>Halfway between two neighboring endpoints, e.g. <i>x</i> = &frac12;.</li>
 </ul>
 <p>
-This results in the following equation:
+We can calculate the range of <i>g</i> with:
 </p>
 <div class="formula">
-<table>
-	<tr><td>1</td></tr>
-	<tr><td class="denominator">2</td></tr>
-</table>
-+
-<span class="par1">(</span>
-<table>
-	<tr><td>3</td></tr>
-	<tr><td class="denominator">4</td></tr>
-</table>
-<span class="par1">)<sup><i>n</i></sup></span>
+<i>r</i>(<i>d</i>, <i>c</i>) =
+<span class="par1">|</span>
+<i>g</i>(0) &minus; <i>g</i>(&frac12;)
+<span class="par1">|</span>
 =
-<span class="par1">(</span>
-<table>
-	<tr><td>7</td></tr>
-	<tr><td class="denominator">16</td></tr>
-</table>
-<span class="par1">)<sup><i>n</i></sup></span>
-+
-<span class="par1">(</span>
-<table>
-	<tr><td>15</td></tr>
-	<tr><td class="denominator">16</td></tr>
-</table>
-<span class="par1">)<sup><i>n</i></sup></span>
-</div>
-<p>
-One of the roots of this equation is 4.67970975809363 (approximately),
-close enough to what we already observed.
-Please be aware that even with this optimal <i>n</i>,
-the function will not be a straight line.
-</p>
-<p>
-<a href="scaled468.png"><img src="scaled468.png" alt="Overlap at n=4.68" width="363" height="135" /></a>
-</p>
-<p>
-Please note the <i>Y</i>-axis has been scaled in the curve above;
-the bumps have been exaggerated by a factor 300.
-(1 &minus; <i>x</i><sup>2</sup>)<sup><i>n</i></sup>
-will swing between 1.5204188 and 1.5205878 (approximately).
-With careful statistical analysis,
-it might be possible to detect the resulting directional artifacts,
-but I doubt that those grid lines will be visible to the naked eye.
-</p>
-<h3>1D function</h3>
-<p>
-After scaling <i>x</i> so that subdomains are at unit-length distances,
-we come to this formula:
-</p>
-<div class="formula">
-<i>h</i>(<i>x</i>) =
+<span class="par1">|</span>
 <div class="sum">
-	<div>&lfloor;<i>x</i>&rfloor; + 2</div>
+	<div><i>d</i> &minus; 1</div>
 	<div class="sigma">&Sigma;</div>
-	<div><i>i</i> = &lfloor;<i>x</i>&rfloor; &minus; 1</div>
+	<div><i>i</i> = 0</div>
 </div>
-<span class="par2">(</span>
-<i>p</i><sub>1</sub>(<i>i</i>) (<i>x</i> &minus; <i>i</i>) +
-<i>p</i><sub>2</sub>(<i>i</i>)
-<span class="par2">)</span>
 <span class="par2">(</span>1 &minus;
 <span class="par1">(</span>
 <table>
-	<tr><td><i>x</i> &minus; <i>i</i></td></tr>
-	<tr><td class="denominator">2</td></tr>
+	<tr><td>2<i>i</i></td></tr>
+	<tr><td class="denominator"><i>d</i></td></tr>
 </table>
+&minus; 1
 <span class="par1">)<sup>2</sup></span>
-<span class="par2">)<sup><i>n</i></sup></span>
+<span class="par2">)<sup><i>c</i></sup></span>
+&minus;
+<span class="par2">(</span>1 &minus;
+<span class="par1">(</span>
+<table>
+	<tr><td>2<i>i</i> + 1</td></tr>
+	<tr><td class="denominator"><i>d</i></td></tr>
+</table>
+&minus; 1
+<span class="par1">)<sup>2</sup></span>
+<span class="par2">)<sup><i>c</i></sup></span>
+<span class="par1">|</span>
 </div>
 <p>
-Notice the &Sigma; operator always sums 4 terms,
-as subsequent subdomains overlap for 75%.
-The number of hash calculations
-(<i>p</i><sub>1</sub> and <i>p</i><sub>2</sub> together)
-is 8 per unit length.
+Some results for various combinations of <i>d</i> and <i>c</i>:
 </p>
-<h3>2D function</h3>
+<table class="matrix">
+<tr>
+<td></td>
+<td><i>c</i> = 2</td>
+<td><i>c</i> = 3</td>
+<td><i>c</i> = 4</td>
+<td><i>c</i> = 5</td>
+<td><i>c</i> = 6</td>
+<td><i>c</i> = 7</td>
+<td><i>c</i> = 8</td>
+<td><i>c</i> = 9</td>
+<td><i>c</i> = 10</td>
+<td><i>c</i> = 11</td>
+<td><i>c</i> = 12</td>
+<td><i>c</i> = 13</td>
+<td><i>c</i> = 14</td>
+<td><i>c</i> = 15</td>
+<td><i>c</i> = 16</td>
+<td><i>c</i> = 17</td>
+<td><i>c</i> = 18</td>
+<td><i>c</i> = 19</td>
+</tr>
+<tr>
+<td><i>d</i> = 2</td>
+<td class="best">0.125</td>
+<td>0.156</td>
+</tr>
+<tr>
+<td><i>d</i> = 3</td>
+<td>0.0370</td>
+<td>0.0617</td>
+<td>0.0581</td>
+<td class="best">0.00401</td>
+<td>0.0723</td>
+</tr>
+<tr>
+<td><i>d</i> = 4</td>
+<td>0.0156</td>
+<td>0.0283</td>
+<td>0.0146</td>
+<td>0.00584</td>
+<td>0.0159</td>
+<td>0.0122</td>
+<td class="best">0.00410</td>
+<td>0.0301</td>
+</tr>
+<tr>
+<td><i>d</i> = 5</td>
+<td>0.00800</td>
+<td>0.0150</td>
+<td>0.00490</td>
+<td>0.00302</td>
+<td>0.00400</td>
+<td class="best">0.000892</td>
+<td>0.00276</td>
+<td>0.00446</td>
+<td>0.00285</td>
+<td>0.00262</td>
+<td>0.0120</td>
+</tr>
+<tr>
+<td><i>d</i> = 6</td>
+<td>0.00463</td>
+<td>0.00887</td>
+<td>0.00200</td>
+<td>0.00147</td>
+<td>0.00122</td>
+<td class="best">0.0000685</td>
+<td>0.000813</td>
+<td>0.000645</td>
+<td>0.000134</td>
+<td>0.000973</td>
+<td>0.00131</td>
+<td>0.000692</td>
+<td>0.00122</td>
+</tr>
+<tr>
+<td><i>d</i> = 7</td>
+<td>0.00292</td>
+<td>0.00565</td>
+<td>0.000931</td>
+<td>0.000749</td>
+<td>0.000435</td>
+<td class="best">0.0000962</td>
+<td>0.000249</td>
+<td>0.000100</td>
+<td>0.000107</td>
+<td>0.000193</td>
+<td>0.000104</td>
+<td>0.000109</td>
+<td>0.000328</td>
+<td>0.000400</td>
+<td>0.000169</td>
+<td>0.000507</td>
+</tr>
+<tr>
+<td><i>d</i> = 8</td>
+<td>0.00195</td>
+<td>0.00381</td>
+<td>0.000480</td>
+<td>0.000408</td>
+<td>0.000176</td>
+<td>0.0000577</td>
+<td>0.0000844</td>
+<td>0.0000146</td>
+<td>0.0000393</td>
+<td>0.0000389</td>
+<td class="best">0.00000116</td>
+<td>0.0000373</td>
+<td>0.0000459</td>
+<td>0.0000137</td>
+<td>0.0000483</td>
+<td>0.000109</td>
+<td>0.000125</td>
+<td>0.0000406</td>
+</tr>
+</table>
+<p>
+The smallest range in every row has been made bold.
+Notice some rows have a smallest range
+that is worse (i.e. bigger) than the preceding row.
+</p>
+<h2>Fractional exponents</h2>
+<p>
+The range of <i>g</i> can be optimized even further
+if we are willing to use non-integer values of <i>c</i>.
+The base of the exponentiation (1 &minus; <i>x</i><sup>2</sup>)
+is always positive within its designated subdomain,
+so there is no problem in applying a fractional exponent.
+</p>
+<p>
+It seems plausible (though I haven't proven this)
+an optimum should be at (or at least near)
+a combination of <i>d</i> and <i>c</i> that satisfy
+<i>r</i>(<i>d</i>, <i>c</i>) = 0.
+This is equivalent to:
+</p>
+<div class="formula">
+<div class="sum">
+	<div><i>d</i> &minus; 1</div>
+	<div class="sigma">&Sigma;</div>
+	<div><i>i</i> = 0</div>
+</div>
+<span class="par1">(</span>
+2<i>i</i>
+(2<i>d</i> &minus; 2<i>i</i>)
+<span class="par1">)<sup><i>c</i></sup></span>
+&minus;
+<span class="par1">(</span>
+(2<i>i</i> + 1)
+(2<i>d</i> &minus; 2<i>i</i> &minus; 1)
+<span class="par1">)<sup><i>c</i></sup></span>
+= 0
+</div>
+<p>
+Take for example <i>d</i> = 4. The equation then becomes:
+</p>
+<div class="formula">
+16<sup>c</sup> + 2 &sdot; 12<sup>c</sup>
+&minus; 2 &sdot; 7<sup>c</sup> &minus; 2 &sdot; 15<sup>c</sup>
+= 0
+</div>
+<p>
+One of the roots of this equation is <i>c</i> &asymp; 4.67970975809363.
+The resulting function <i>g</i> looks pretty straight at first sight.
+</p>
+<p>
+<a href="overlap468.png"><img src="overlap468.png" alt="Overlap at c=4.68" width="222" height="136" /></a>
+</p>
+<p>
+Of course, even with an 'optimal' <i>c</i>,
+function <i>g</i> will never be a straight line,
+as it is still the sum of a finite number of polynomials.
+Here is the same 'line', with the Y-axis scaled a factor 300.
+</p>
+<p>
+<a href="scaled468.png"><img src="scaled468.png" alt="Overlap at c=4.68" width="363" height="135" /></a>
+</p>
+<p>
+Notice the extremes identified earlier
+(e.g. <i>x</i> = 0 and <i>x</i> = &frac12;)
+are no longer opposing extremes; in the diagram above they are both minima!
+There is a new maximum in between where <i>g</i>'(<i>x</i>) = 0.
+</p>
+<p>
+It is also worth noting that there is typically more than one value of <i>c</i>
+that is an optimum for any given <i>d</i>.
+In fact, the number of optima appears to be equal to <i>d</i> &minus; 1
+(I haven't proven this).
+Here is an exhaustive list for <i>d</i> &le; 5.
+</p>
+<table class="optima">
+<tr>
+<td><i>d</i></td>
+<td>equation to calculate optimal <i>c</i></td>
+<td>optimal <i>c</i></td>
+<td>range(<i>g</i>(<i>x</i>))</td>
+</tr>
+<tr>
+<td>2</td>
+<td>
+4<sup><i>c</i></sup> &minus; 2 &sdot; 3<sup><i>c</i></sup>
+= 0
+</td>
+<td>2.40942
+<td class="best">8.387 &sdot; 10<sup>&minus;3</sup></td>
+</tr>
+<tr>
+<td rowspan="2">3</td>
+<td rowspan="2">
+2 &sdot; 8<sup><i>c</i></sup>
+&minus; 2 &sdot; 5<sup><i>c</i></sup> &minus; 9<sup><i>c</i></sup>
+= 0
+</td>
+<td>2.239</td>
+<td>2.327 &sdot; 10<sup>&minus;3</sup></td>
+</tr>
+<tr>
+<td>5.05807</td>
+<td class="best">7.704 &sdot; 10<sup>&minus;4</sup></td>
+</tr>
+<tr>
+<td rowspan="3">4</td>
+<td rowspan="3">
+16<sup><i>c</i></sup> + 2 &sdot; 12<sup><i>c</i></sup>
+&minus; 2 &sdot; 7<sup><i>c</i></sup> &minus; 2 &sdot; 15<sup><i>c</i></sup>
+= 0
+</td>
+<td>2.16937</td>
+<td>9.747 &sdot; 10<sup>&minus;4</sup></td>
+</tr>
+<tr>
+<td>4.67971</td>
+<td>1.690 &sdot; 10<sup>&minus;4</sup></td>
+</tr>
+<tr>
+<td>7.80135</td>
+<td class="best">4.569 &sdot; 10<sup>&minus;5</sup></td>
+</tr>
+<tr>
+<td rowspan="4">5</td>
+<td rowspan="4">
+2 &sdot; 16<sup><i>c</i></sup> + 2 &sdot; 24<sup><i>c</i></sup>
+&minus; 2 &sdot; 9<sup><i>c</i></sup>
+&minus; 2 &sdot; 21<sup><i>c</i></sup> &minus; 25<sup><i>c</i></sup>
+= 0
+</td>
+<td>2.13128</td>
+<td>5.016 &sdot; 10<sup>&minus;4</sup></td>
+</tr>
+<tr>
+<td>4.50491</td>
+<td>5.477 &sdot; 10<sup>&minus;5</sup></td>
+</tr>
+<tr>
+<td>7.22765</td>
+<td>9.737 &sdot; 10<sup>&minus;6</sup></td>
+</tr>
+<tr>
+<td>10.6063</td>
+<td class="best">1.842 &sdot; 10<sup>&minus;6</sup></td>
+</tr>
+</table>
+<p>
+Unsurprisingly, more overlap (higher <i>d</i>) gives <i>g</i> a smaller range,
+meaning the grid lines will be harder to spot.
+Overlap comes with a price (more calculations), so it's a trade-off.
+Whatever <i>d</i> you choose,
+you may want to pick the accompanying <i>c</i> with the smallest range
+(shown in bold).
+</p>
+<h2>Performance trade-off</h2>
+<p>
+Evaluating <i>g</i>(<i>x</i>)
+involves <i>d</i> exponentiations with exponent <i>c</i>.
+Exponentiation with a fractional exponent
+is typically more expensive than an integer exponent.
+Instead of pursuing an optimal <i>c</i>,
+one could also settle for an integer <i>c</i>
+and instead increase <i>n</i> until the desired range has been reached.
+That is a trade-off, since increasing <i>n</i> also comes with a price,
+especially in higher dimensions.
+</p>
+<p>
+For example, suppose you demand a range &lt; 10<sup>&minus;4</sup>.
+With fractional exponents, this is feasible with an overlap <i>d</i> of 4
+(when combined with <i>c</i> = 7.80135).
+For one-dimensional noise,
+evaluation of <i>g</i>(<i>x</i>) would then require 4 exponentiations.
+For 2D noise (see below), you'd need 4<sup>2</sup> = 16 exponentiations,
+and in 3D, the number is 4<sup>3</sup> = 64.
+</p>
+<p>
+With integer exponents, you would be forced to increase <i>d</i> to 6.
+The exponent <i>c</i> has to be 7.
+Such an exponentiation can be implemented with
+<a href="https://en.wikipedia.org/wiki/Addition-chain_exponentiation">4 multiplications</a>.
+The total number of multiplications in one, two and three dimensions will be
+4 &sdot; 6 = 24,
+4 &sdot; 6<sup>2</sup> = 144 and
+4 &sdot; 6<sup>3</sup> = 864, respectively.
+When optimizing for speed, you should carefully investigate
+how exponentiation performs compared to multiplication.
+Also keep in mind that exponentiation could probably be accelerated with a
+lookup table and interpolation, especially since the base is always in [0, 1].
+</p>
+<h2>1D function</h2>
+<p>
+All we have to do now is bring the random numbers back into the formula:
+</p>
+<div class="formula">
+<i>g</i>(<i>x</i>) =
+<div class="sum">
+	<div><i>d</i> &minus; 1</div>
+	<div class="sigma">&Sigma;</div>
+	<div><i>i</i> = 0</div>
+</div>
+<i>f</i>
+(<i>d</i> <span class="par1">&lfloor;</span>
+<table>
+	<tr><td><i>x</i> + <i>i</i></td></tr>
+	<tr><td class="denominator"><i>d</i></td></tr>
+</table>
+<span class="par1">&rfloor;</span>
+&minus; <i>i</i>,
+2<span class="par1">{</span>
+<table>
+	<tr><td><i>x</i> + <i>i</i></td></tr>
+	<tr><td class="denominator"><i>d</i></td></tr>
+</table>
+<span class="par1">}</span> &minus; 1)
+</div>
+<div class="formula">
+<i>f</i> (<i>i</i>, <i>x</i>) =
+<span class="par1">(</span>
+<i>h</i><sub>1</sub>(<i>i</i>) <i>x</i> +
+<i>h</i><sub>2</sub>(<i>i</i>)
+<span class="par1">) (</span>
+1 &minus; <i>x</i><sup>2</sup>
+<span class="par1">)<sup><i>c</i></sup></span>
+</div>
+<p>
+The number of hash calculations
+(<i>h</i><sub>1</sub> and <i>h</i><sub>2</sub> together)
+is 2<i>d</i> per unit length.
+With caching,
+the number of hash calculations could be optimized to 2 per unit length.
+</p>
+<h2>2D function</h2>
 <p>
 We already saw this formula at the start of this document:
 </p>
 <div class="formula">
-<i>h</i>(<i>x</i>, <i>y</i>) =
+<i>g</i>(<i>x</i>, <i>y</i>) =
 <div class="sum">
-	<div>&lfloor;<i>x</i>&rfloor; + 2</div>
+	<div><i>d</i> &minus; 1</div>
 	<div class="sigma">&Sigma;</div>
-	<div><i>i</i> = &lfloor;<i>x</i>&rfloor; &minus; 1</div>
+	<div><i>i</i> = 0</div>
 </div>
-&nbsp;
 <div class="sum">
-	<div>&lfloor;<i>y</i>&rfloor; + 2</div>
+	<div><i>d</i> &minus; 1</div>
 	<div class="sigma">&Sigma;</div>
-	<div><i>j</i> = &lfloor;<i>y</i>&rfloor; &minus; 1</div>
+	<div><i>j</i> = 0</div>
 </div>
-<span class="par2">(</span>
-<i>p</i><sub>1</sub>(<i>i</i>, <i>j</i>) (<i>x</i> &minus; <i>i</i>) +
-<i>p</i><sub>2</sub>(<i>i</i>, <i>j</i>) (<i>y</i> &minus; <i>j</i>) +
-<i>p</i><sub>3</sub>(<i>i</i>, <i>j</i>)
-<span class="par2">)</span>
-<span class="par2">(</span>1 &minus;
-<span class="par1">(</span>
+<i>f</i>
+(<i>d</i> <span class="par1">&lfloor;</span>
 <table>
-	<tr><td><i>x</i> &minus; <i>i</i></td></tr>
-	<tr><td class="denominator">2</td></tr>
+	<tr><td><i>x</i> + <i>i</i></td></tr>
+	<tr><td class="denominator"><i>d</i></td></tr>
 </table>
-<span class="par1">)<sup>2</sup></span>
-<span class="par2">)<sup><i>n</i></sup></span>
-<span class="par2">(</span>1 &minus;
-<span class="par1">(</span>
+<span class="par1">&rfloor;</span>
+&minus; <i>i</i>,
+<i>d</i> <span class="par1">&lfloor;</span>
 <table>
-	<tr><td><i>y</i> &minus; <i>j</i></td></tr>
-	<tr><td class="denominator">2</td></tr>
+	<tr><td><i>y</i> + <i>j</i></td></tr>
+	<tr><td class="denominator"><i>d</i></td></tr>
 </table>
-<span class="par1">)<sup>2</sup></span>
-<span class="par2">)<sup><i>n</i></sup></span>
+<span class="par1">&rfloor;</span>
+&minus; <i>j</i>,
+2<span class="par1">{</span>
+<table>
+	<tr><td><i>x</i> + <i>i</i></td></tr>
+	<tr><td class="denominator"><i>d</i></td></tr>
+</table>
+<span class="par1">}</span> &minus; 1,
+2<span class="par1">{</span>
+<table>
+	<tr><td><i>y</i> + <i>j</i></td></tr>
+	<tr><td class="denominator"><i>d</i></td></tr>
+</table>
+<span class="par1">}</span> &minus; 1)
+</div>
+<div class="formula">
+<i>f</i> (<i>i</i>, <i>j</i>, <i>x</i>, <i>y</i>) =
+<span class="par1">(</span>
+<i>h</i><sub>1</sub>(<i>i</i>, <i>j</i>) <i>x</i> +
+<i>h</i><sub>2</sub>(<i>i</i>, <i>j</i>) <i>y</i> +
+<i>h</i><sub>3</sub>(<i>i</i>, <i>j</i>)
+<span class="par1">) (</span>
+1 &minus; <i>x</i><sup>2</sup>
+<span class="par1">)<sup><i>c</i></sup> (</span>
+1 &minus; <i>y</i><sup>2</sup>
+<span class="par1">)<sup><i>c</i></sup></span>
 </div>
 <p>
-Overlap is 4 &times; 4 = 16.
-The number of hash calculations per unit square is 3 &times; 16 = 48.
+The number of hash calculations
+(<i>h</i><sub>1</sub>, <i>h</i><sub>2</sub> and <i>h</i><sub>3</sub> together)
+is 3<i>d</i> <sup>2</sup> per unit square.
+With caching,
+the number of hash calculations could be optimized to 3 per unit square.
 </p>
-<h3>Higher dimensions</h3>
+<h2>Higher dimensions</h2>
 <p>
 Extending the formula to higher dimensions should be straightforward,
 but the number of hash calculations grows exponentially with the dimension.
@@ -442,9 +899,12 @@ You can plot the 1D curve in
 using the following stack of formulas:
 </p>
 <ul style="font-family:monospace">
-<li>h\left(x\right)=\sum_{i=\operatorname{floor}\left(x\right)-1}^{\operatorname{floor}\left(x\right)+2}\left(p_{1}\left(i\right)\left(x-i\right)+p_{2}\left(i\right)\right)\left(1-\left(\frac{x-i}{2}\right)^{2}\right)^{4.67970975809363}</li>
-<li>p_{1}\left(i\right)=l_{1}\left[\operatorname{mod}\left(i,\operatorname{length}\left(l_{1}\right)\right)+1\right]</li>
-<li>p_{2}\left(i\right)=l_{2}\left[\operatorname{mod}\left(i,\operatorname{length}\left(l_{2}\right)\right)+1\right]</li>
+<li>g\left(x\right)=\sum_{i=0}^{d-1}f\left(d\operatorname{floor}\left(\frac{x+i}{d}\right)-i,\ 2\operatorname{mod}\left(\frac{x+i}{d},1\right)-1\right)</li>
+<li>f\left(i,\ x\right)=\left(h_{1}\left(i\right)x+h_{2}\left(i\right)\right)\left(1-x^{2}\right)^{c}</li>
+<li>d=4</li>
+<li>c=4.67970975809363</li>
+<li>h_{1}\left(i\right)=2l_{1}\left[\operatorname{mod}\left(i,\operatorname{length}\left(l_{1}\right)\right)+1\right]-1</li>
+<li>h_{2}\left(i\right)=2l_{2}\left[\operatorname{mod}\left(i,\operatorname{length}\left(l_{2}\right)\right)+1\right]-1</li>
 <li>l_{1}=\operatorname{random}\left(100\right)</li>
 <li>l_{2}=\operatorname{random}\left(100\right)</li>
 </ul>
@@ -463,6 +923,11 @@ I am open for criticism; please let me know if I missed anything.
 <p>
 All diagrams have been made using
 <a href="https://www.desmos.com/calculator">Desmos</a>.
+</p>
+<p>
+Thanks to
+<a href="https://www.wolframalpha.com/">WolframAlpha</a>
+for helping me solve a good number of equations.
 </p>
 </body>
 </html>

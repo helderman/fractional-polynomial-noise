@@ -1,5 +1,5 @@
 div.formula {
-	margin-left: 2em;
+	margin: 1em;
 }
 
 div.formula span.par1 {
@@ -43,4 +43,28 @@ div.formula table {
 
 div.formula table td.denominator {
 	border-top: solid thin;
+}
+
+table.optima {
+	border-collapse: collapse;
+}
+
+table.optima td {
+	border: solid thin;
+	padding: 8px;
+	vertical-align: top;
+}
+
+table.matrix {
+	border-collapse: collapse;
+}
+
+table.matrix td {
+	border: solid thin;
+	padding: 4px;
+	white-space: nowrap;
+}
+
+.best {
+	font-weight: bold;
 }

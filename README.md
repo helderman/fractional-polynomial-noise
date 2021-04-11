@@ -2,11 +2,15 @@
 
 Experimental algorithm for gradient noise.
 
-You can find the formula and a detailed explanation [here](docs/index.html).
+You can find the formula and a detailed explanation
+[here](https://helderman.github.io/fractional-polynomial-noise/docs/index.html).
 
 ## WebGL1 implementation (April 2021)
 
-See it in action [here](webgl/noise2D.html).
+See it in action [here](https://helderman.github.io/fractional-polynomial-noise/webgl/noise2D.html).
+
+Please note the underlying PRNG is
+[questionable](https://stackoverflow.com/q/12964279).
 
 ## WebGL2 implementation (March 2021)
 
@@ -19,5 +23,8 @@ but I'm having trouble verifying my email address there. Sorry.
 
 ## C implementation (April 2021)
 
-Generates a [raw PGM](https://en.wikipedia.org/wiki/Netpbm#File_formats) file,
-which can be opened by [GIMP](https://en.wikipedia.org/wiki/GIMP).
+Build and run [noise2D.c](c/noise2D.c),
+redirecting its output to a file with extension .pgm.
+Open the file with an application that accepts
+[raw PGM format](https://en.wikipedia.org/wiki/Netpbm#File_formats),
+for example [GIMP](https://en.wikipedia.org/wiki/GIMP).
