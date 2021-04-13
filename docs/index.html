@@ -742,6 +742,28 @@ Whatever <i>d</i> you choose,
 you may want to pick the accompanying <i>c</i> with the smallest range
 (shown in bold).
 </p>
+<h2>Zero range</h2>
+<p>
+We managed to make the range of <i>g</i> very small, though not zero.
+Basically, we did this by shaping the curves
+so that they (almost) even each other out.
+It is worth noting that for <i>d</i> = 2,
+there is an easy alternative that <i>does</i> make the range zero.
+In other words, it perfectly flattens the line defined by <i>g</i>.
+Just replace (1 &minus; <i>x</i><sup>2</sup>)<sup><i>c</i></sup>
+with one of these approximations that have better symmetry (like a mirrored
+<a href="https://en.wikipedia.org/wiki/Sigmoid_function">sigmoid function</a>):
+</p>
+<ul>
+<li>&frac12;(1 + cos &pi;<i>x</i>)</li>
+<li>1 &minus;
+<a href="https://en.wikipedia.org/wiki/Smoothstep">smoothstep</a>(|<i>x</i>|)
+</li>
+</ul>
+<p>
+Since <i>d</i> = 2 looked pretty bad in my experiments,
+I will ignore this possibility for now.
+</p>
 <h2>Performance trade-off</h2>
 <p>
 Evaluating <i>g</i>(<i>x</i>)
@@ -918,6 +940,10 @@ I am not a mathematician,
 I am a software engineer with just enough knowledge and experience
 to understand some of the challenges in this area.
 I am open for criticism; please let me know if I missed anything.
+</p>
+<p>
+In case anybody already came up with this idea before I did:
+my apologies for re-inventing the wheel.
 </p>
 <h2>Credits</h2>
 <p>
