@@ -2,3 +2,16 @@ html, body {
 	margin: 0;
 	overflow: hidden;
 }
+
+#sliders {
+	position: absolute;
+	left: 10px;
+	top: 10px;
+	background: white;
+	border: thin solid black;
+	padding: 10px;
+}
+
+#sliders input {
+	width: 400px;
+}

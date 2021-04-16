@@ -1,4 +1,4 @@
-const fragmentShaderSource = `#version 100
+const fragmentShaderSource = `
 
 // ------------------------------------
 // GLSL code
@@ -6,59 +6,66 @@ const fragmentShaderSource = `#version 100
 
 precision lowp float;
 
+#if __VERSION__ == 300
+#define gl_FragColor FragColor
+out vec4 gl_FragColor;
+#define overlap u_overlap
+#else
+#define overlap 4
+#endif
+
 // -------------------- Parameters -----------------------
 
-const float continuity = 4.67970975809363;
-const ivec2 overlap = ivec2(2);
-const vec3 salt = vec3(3.0, 2.0, 0.0);
+uniform vec2 u_center;
+uniform float u_scale;
+uniform int u_overlap;
+uniform float u_smooth;
 
 // -------------------- PRNG -----------------------
 
-// Generates 3 pseudo-random numbers in parallel;
-// enough for 1 polynomial (i.e. 1 grid cell on 1 layer)
-vec3 rand(mat3 a)
+// "Hash without Sine" by David Hoskins
+// MIT License
+// https://www.shadertoy.com/view/4djSRW
+vec3 hash32(vec2 p)
 {
-    // https://stackoverflow.com/questions/4200224/random-noise-functions-for-glsl
-    return fract(sin(a * vec3(12.9898, 78.233, 111.1)) * 43758.5453) * 2.0 - 1.0;
+	vec3 p3 = fract(vec3(p.xyx) * vec3(.1031, .1030, .0973));
+	p3 += dot(p3, p3.yxz+33.33);
+	return fract((p3.xxy+p3.yzz)*p3.zyx);
 }
 
 // -------------------- Noise calculation -----------------------
 
-// Function (x,y) -> (a1*x + a2*y + b) * (1 - x^2)^n * (1 - y^2)^n
-float polynomial(vec3 coeff, vec2 pos)
-{
-    vec2 p = 1.0 - pos * pos;
-    return dot(coeff, vec3(pos, 1.0)) * pow(p.x * p.y, continuity);
-}
-
 // Calculates the height for a single layer
-float layer(vec2 pos, vec2 alignment)
+float f(in vec2 cell, in vec2 local)
 {
-    vec2 aligned = floor(pos * vec2(overlap) - alignment) / vec2(overlap);
-    return polynomial(rand(mat3(vec3(aligned.x), vec3(aligned.y), salt)), pos - aligned);
+	vec2 hill = 1.0 - local * local;
+	return dot(hash32(cell) - 0.5, vec3(local, 1.0)) * pow(hill.x * hill.y, u_smooth);
 }
 
 // Calculates the total height, using all layers
-float height(vec2 pos)
+float g(in vec2 position)
 {
-    float h = 0.0;
-    for (int j = -overlap.y; j < overlap.y; j++)
-    {
-        for (int i = -overlap.x; i < overlap.x; i++)
-        {
-            h += layer(pos, vec2(i, j));
-        }
-    }
-    return h / sqrt(float(overlap.x * overlap.y));
+	float total = 0.0;
+	float d = float(overlap);
+	for (int j = 0; j < overlap; j++)
+	{
+		for (int i = 0; i < overlap; i++)
+		{
+			vec2 ij = vec2(i, j);
+			vec2 p = (position + ij) / d;
+			total += f(d * floor(p) - ij, 2.0 * fract(p) - 1.0);
+		}
+	}
+	return total;
 }
 
 // -------------------- demo -----------------------
 
 void main()
 {
-    vec2 pos = gl_FragCoord.xy / 60.0;
-    float h = height(pos) * 0.2 + 0.5;
-    gl_FragColor = vec4(vec3(h), 1.0);
+	vec2 pos = u_scale * (gl_FragCoord.xy - u_center);
+	float h = g(pos) * 0.2 + 0.5;
+	gl_FragColor = vec4(vec3(h), 1.0);
 }
 
 `;
@@ -67,17 +74,21 @@ void main()
 // JavaScript code
 // ------------------------------------
 
+const ver1 = window.location.hash == '#1';
+const version = ver1 ? '#version 100' : '#version 300 es';
+const contextType = ver1 ? 'webgl' : 'webgl2';
+document.getElementById('i_overlap').disabled = ver1;
 
 // In our HTML page, there should be a canvas with ID 'canvas'.
 const canvas = document.getElementById('canvas');
-const gl = canvas.getContext('webgl');
-if (!gl) throw 'WebGL not supported here';
+const gl = canvas.getContext(contextType);
+if (!gl) throw contextType + ' not supported here';
 
 // Create a 'program' with a vertex shader and a fragment shader.
 const program = gl.createProgram();
 const loadShader = function(gl, type, source) {
 	const shader = gl.createShader(type);
-	gl.shaderSource(shader, source);
+	gl.shaderSource(shader, version + source);
 	gl.compileShader(shader);
 	if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
 		throw 'Compile error: ' + gl.getShaderInfoLog(shader);
@@ -85,7 +96,10 @@ const loadShader = function(gl, type, source) {
 	return shader;
 };
 gl.attachShader(program, loadShader(gl, gl.VERTEX_SHADER, `
-
+#if __VERSION__ == 300
+#define attribute in
+#define varying out
+#endif
 	attribute vec2 a_position;	// clip space [-1, +1]
 	varying vec2 v_texCoord;	// texel coordinates [0, 1]
 	void main() {
@@ -110,6 +124,10 @@ const locations = {
 		this[name] = gl.getUniformLocation(program, name);
 	}
 };
+locations.uniform('u_center');
+locations.uniform('u_scale');
+locations.uniform('u_overlap');
+locations.uniform('u_smooth');
 locations.attribute('a_position');
 
 // Prepare the vertex shader with a buffer containing 6 vertices (2 triangles).
@@ -134,12 +152,28 @@ gl.bufferData(
 	canvas.height = window.innerHeight;
 })();
 
+function getInt(name) {
+	let value = parseInt(document.getElementById('i_' + name).value);
+	document.getElementById('o_' + name).innerHTML = value;
+	return value;
+}
+
+function getFloat(name) {
+	let value = parseFloat(document.getElementById('i_' + name).value);
+	document.getElementById('o_' + name).innerHTML = value.toFixed(1);
+	return value;
+}
+
 // Animation loop.
 (function loop(time) {
 	requestAnimationFrame(loop);
 
 	gl.viewport(0, 0, canvas.width, canvas.height);
 	gl.useProgram(program);
+	gl.uniform2f(locations.u_center, canvas.width / 2, canvas.height / 2);
+	gl.uniform1f(locations.u_scale, Math.exp(-getFloat('scale')));
+	gl.uniform1i(locations.u_overlap, getInt('overlap'));
+	gl.uniform1f(locations.u_smooth, getFloat('smooth'));
 
 	vertexShader.draw(locations.a_position);
 })(0);
