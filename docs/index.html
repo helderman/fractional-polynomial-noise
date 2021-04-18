@@ -52,7 +52,7 @@ If this is an issue, then please consider using
 instead.
 </li>
 <li>
-The algorithm contains an exponentiation,
+The calculation involves multiple exponentiations,
 which may be computationally expensive on some platforms.
 (May be optimized using a lookup table.)
 </li>
@@ -66,7 +66,7 @@ Click the image to see it in full size (1024 &times; 1024 pixels).
 </p>
 <p>
 The image has been produced by
-<a href="../c/noise2D.c">this C program</a>,
+<a href="../c/amplitude.c">this C program</a>,
 which implements the following formula:
 </p>
 <div class="formula">
@@ -117,13 +117,13 @@ which implements the following formula:
 <i>h</i><sub>3</sub>(<i>i</i>, <i>j</i>)
 <span class="par1">) (</span>
 1 &minus; <i>x</i><sup>2</sup>
-<span class="par1">)<sup><i>c</i></sup> (</span>
+<span class="par1">)<sup><i>s</i></sup> (</span>
 1 &minus; <i>y</i><sup>2</sup>
-<span class="par1">)<sup><i>c</i></sup></span>
+<span class="par1">)<sup><i>s</i></sup></span>
 </div>
 <p>
 where <i>d</i> = 4,
-<i>c</i> = 4.67970975809363 (far from obvious; explained below)
+<i>s</i> = 4.67970975809363 (far from obvious; explained below)
 and <i>h</i><sub>1</sub>, <i>h</i><sub>2</sub>, <i>h</i><sub>3</sub>
 are hash functions generating pseudo-random numbers in the range (&minus;1, 1).
 These can be three different functions,
@@ -284,11 +284,11 @@ It isn't hard to guess how to generalize this for higher levels of continuity:
 </p>
 <div class="formula">
 <i>f</i> (<i>x</i>) =
-(<i>a x</i> + <i>b</i>) (1 &minus; <i>x</i><sup>2</sup>)<sup><i>c</i></sup>
+(<i>a x</i> + <i>b</i>) (1 &minus; <i>x</i><sup>2</sup>)<sup><i>s</i></sup>
 </div>
 <p>
 This basically means we can increase smoothness as far as we want,
-simply by increasing <i>c</i>.
+simply by increasing <i>s</i>.
 But that does not necessarily make the curve better.
 So far, I have ignored the 'valleys' between the different polynomials:
 </p>
@@ -305,57 +305,80 @@ to produce a function without valleys:
 <a href="overlap.png"><img src="overlap.png" alt="Overlapping curves" width="330" height="100" /></a>
 </p>
 <p>
-The problem is, this is more difficult for higher values of <i>c</i>.
-Look what happens to the previous picture when <i>c</i> = 9:
+The problem is, this is more difficult for higher values of <i>s</i>.
+Look what happens to the previous picture when <i>s</i> = 9:
 </p>
 <p>
-<a href="overlap9.png"><img src="overlap9.png" alt="Overlap at c=9" width="250" height="65" /></a>
+<a href="overlap9.png"><img src="overlap9.png" alt="Overlap at s=9" width="250" height="65" /></a>
 </p>
 <p>
 This is because the increasing demand for smoothness at the endpoints,
 makes the 'valleys' around the endpoints wider, and the hills narrower.
 </p>
+<h2>Carrier and message</h2>
+<p>
+I am taking the liberty of decomposing function <i>f</i>
+into two separate functions <i>m</i> and <i>c</i>.
+</p>
+<div class="formula">
+<i>f</i> (<i>x</i>) = <i>m</i>(<i>x</i>) <i>c</i>(<i>x</i>)
+</div>
+<div class="formula">
+<i>m</i>(<i>x</i>) = <i>a x</i> + <i>b</i>
+</div>
+<div class="formula">
+<i>c</i>(<i>x</i>) = (1 &minus; <i>x</i><sup>2</sup>)<sup><i>s</i></sup>
+</div>
+<p>
+This is reminiscent of
+<a href="https://en.wikipedia.org/wiki/Amplitude_modulation">amplitude modulation</a>:
+we have a perfectly regular 'carrier' <i>c</i>
+being modulated by a pseudo-random 'message' <i>m</i>.
+In line with that analogy, our carrier should be a
+<a href="https://en.wikipedia.org/wiki/Periodic_function">periodic function</a>.
+I don't want to modify <i>c</i> directly;
+instead I will start defining a new function <i>g</i>
+as a periodic wrapper around <i>c</i>.
+</p>
+<p>
+First of all, I will let <i>g</i> transform <i>x</i>
+to give it a more convenient domain [0, 1].
+</p>
+<div class="formula">
+<i>g</i>(<i>x</i>) =
+<i>c</i>(2<i>x</i> &minus; 1)
+</div>
+<p>
+Domain [0, 1] is a perfect fit for {<i>x</i>},
+the fraction of <i>x</i>, defined as <i>x</i> &minus; &lfloor;<i>x</i>&rfloor;.
+This extends the domain to (&minus;&infin;, +&infin;)
+and makes <i>g</i> periodic.
+The period is 1.
+</p>
+<div class="formula">
+<i>g</i>(<i>x</i>) =
+<i>c</i>(2{<i>x</i>} &minus; 1)
+</div>
 <h2>Overlapping subdomains</h2>
 <p>
-So how effective is this idea of overlapping subdomains?
-This is best witnessed when temporarily disabling randomness.
-Use constant, 'flat' coefficients across the entire landscape,
-rather than pseudo-random numbers.
-With <i>a</i> = 0 and <i>b</i> = 1, we see identical, symmetric 'hills',
-with no distractions coming from 'random' variations.
+I can now use the 'carrier' to explore the idea of overlapping subdomains.
+By considering only the regular part of the function,
+leaving the random 'message' <i>m</i> out of the equation,
+it becomes possible to witness
+just how effective overlaps will be to fill up the 'valleys'.
+Basically, this is the same as using constant coefficients
+<i>a</i> = 0 and <i>b</i> = 1 rather than random numbers.
+Ideally, it should result in a perfectly flat terrain.
 </p>
-<div class="formula">
-<i>f</i> (<i>x</i>) =
-<span class="par1">(</span>
-1 &minus; <i>x</i><sup>2</sup>
-<span class="par1">)<sup><i>c</i></sup></span>
-</div>
 <p>
-We define a new function <i>g</i>
-that transforms <i>x</i> to give us a more convenient domain [0, 1].
+Let's continue tweaking <i>g</i>.
+Overlaps warrant some more transformations on <i>x</i>.
+We must be able to stretch the curve, making its period <i>d</i>.
+We must also be able to change its phase by <i>i</i>.
 </p>
 <div class="formula">
 <i>g</i>(<i>x</i>) =
-<i>f</i> (2<i>x</i> &minus; 1)
-</div>
-<p>
-This domain [0, 1] perfectly fits {<i>x</i>}
-(the fraction of <i>x</i>,
-defined as <i>x</i> &minus; &lfloor;<i>x</i>&rfloor;)
-to extend the domain and make <i>g</i> periodic, with period 1.
-</p>
-<div class="formula">
-<i>g</i>(<i>x</i>) =
-<i>f</i> (2{<i>x</i>} &minus; 1)
-</div>
-<p>
-We can stretch this curve, making its period <i>d</i>.
-We can also change its phase by <i>i</i>.
-</p>
-<div class="formula">
-<i>g</i>(<i>x</i>) =
-<i>f</i>
-(2<span class="par1">{</span>
+<i>c</i>(2<span class="par1">{</span>
 <table>
 	<tr><td><i>x</i> + <i>i</i></td></tr>
 	<tr><td class="denominator"><i>d</i></td></tr>
@@ -372,7 +395,7 @@ Now we can overlap <i>d</i> curves with phase 0, 1, ... , <i>d</i> &minus; 1.
 	<div class="sigma">&Sigma;</div>
 	<div><i>i</i> = 0</div>
 </div>
-<i>f</i>
+<i>c</i>
 (2<span class="par1">{</span>
 <table>
 	<tr><td><i>x</i> + <i>i</i></td></tr>
@@ -405,21 +428,32 @@ Obviously, the more overlap, the better the valleys will be filled up.
 But too much overlap is computationally expensive
 and may make the landscape bland, due to prominent peaks being averaged out.
 </p>
+<p>
+One may argue that the overlaps are forcing us
+to share pseudo-random numbers between neighboring subdomains,
+thereby eliminating the 'nice and simple' advantage mentioned earlier.
+Indeed,
+overlaps are basically our substitute for the interpolations found in other noise algorithms.
+But where other algorithms require the interpolation formula to be rewritten
+when there is a need to involve more neighbors,
+we only need to increase a parameter <i>d</i>.
+It may not be the most efficient approach, but it sure is simple.
+</p>
 <h2>Tuning the parameters</h2>
 <p>
 Fortunately, we have another parameter in our formula:
-it appears the continuity <i>c</i> plays an important role
+it appears the continuity <i>s</i> plays an important role
 in shaping the curves in such a way that they even out each other.
 To flatten the curve,
-you need to 'tune' the two parameters <i>d</i> and <i>c</i>.
+you need to 'tune' the two parameters <i>d</i> and <i>s</i>.
 </p>
 <p>
-The image above was made with <i>d</i> = 4, <i>c</i> = 2.
+The image above was made with <i>d</i> = 4, <i>s</i> = 2.
 It's pretty good already,
-but it becomes even flatter when increasing <i>c</i> to 4 or 5.
+but it becomes even flatter when increasing <i>s</i> to 4 or 5.
 Above 6, valleys become visible again.
-This was already explained above:
-the 'hills' become narrower as <i>c</i> increases,
+This was already explained earlier:
+the 'hills' become narrower as <i>s</i> increases,
 and eventually they cannot even fill up 25% of their domain,
 meaning that an overlap <i>d</i> of 4 is no longer sufficient.
 </p>
@@ -436,7 +470,7 @@ Extremes can be found at the following points on the X-axis.
 We can calculate the range of <i>g</i> with:
 </p>
 <div class="formula">
-<i>r</i>(<i>d</i>, <i>c</i>) =
+<i>r</i>(<i>d</i>, <i>s</i>) =
 <span class="par1">|</span>
 <i>g</i>(0) &minus; <i>g</i>(&frac12;)
 <span class="par1">|</span>
@@ -455,7 +489,7 @@ We can calculate the range of <i>g</i> with:
 </table>
 &minus; 1
 <span class="par1">)<sup>2</sup></span>
-<span class="par2">)<sup><i>c</i></sup></span>
+<span class="par2">)<sup><i>s</i></sup></span>
 &minus;
 <span class="par2">(</span>1 &minus;
 <span class="par1">(</span>
@@ -465,33 +499,33 @@ We can calculate the range of <i>g</i> with:
 </table>
 &minus; 1
 <span class="par1">)<sup>2</sup></span>
-<span class="par2">)<sup><i>c</i></sup></span>
+<span class="par2">)<sup><i>s</i></sup></span>
 <span class="par1">|</span>
 </div>
 <p>
-Some results for various combinations of <i>d</i> and <i>c</i>:
+Some results for various combinations of <i>d</i> and <i>s</i>:
 </p>
 <table class="matrix">
 <tr>
 <td></td>
-<td><i>c</i> = 2</td>
-<td><i>c</i> = 3</td>
-<td><i>c</i> = 4</td>
-<td><i>c</i> = 5</td>
-<td><i>c</i> = 6</td>
-<td><i>c</i> = 7</td>
-<td><i>c</i> = 8</td>
-<td><i>c</i> = 9</td>
-<td><i>c</i> = 10</td>
-<td><i>c</i> = 11</td>
-<td><i>c</i> = 12</td>
-<td><i>c</i> = 13</td>
-<td><i>c</i> = 14</td>
-<td><i>c</i> = 15</td>
-<td><i>c</i> = 16</td>
-<td><i>c</i> = 17</td>
-<td><i>c</i> = 18</td>
-<td><i>c</i> = 19</td>
+<td><i>s</i> = 2</td>
+<td><i>s</i> = 3</td>
+<td><i>s</i> = 4</td>
+<td><i>s</i> = 5</td>
+<td><i>s</i> = 6</td>
+<td><i>s</i> = 7</td>
+<td><i>s</i> = 8</td>
+<td><i>s</i> = 9</td>
+<td><i>s</i> = 10</td>
+<td><i>s</i> = 11</td>
+<td><i>s</i> = 12</td>
+<td><i>s</i> = 13</td>
+<td><i>s</i> = 14</td>
+<td><i>s</i> = 15</td>
+<td><i>s</i> = 16</td>
+<td><i>s</i> = 17</td>
+<td><i>s</i> = 18</td>
+<td><i>s</i> = 19</td>
 </tr>
 <tr>
 <td><i>d</i> = 2</td>
@@ -593,10 +627,10 @@ The smallest range in every row has been made bold.
 Notice some rows have a smallest range
 that is worse (i.e. bigger) than the preceding row.
 </p>
-<h2>Fractional exponents</h2>
+<h2>Fractional exponent</h2>
 <p>
 The range of <i>g</i> can be optimized even further
-if we are willing to use non-integer values of <i>c</i>.
+if we are willing to use non-integer values of <i>s</i>.
 The base of the exponentiation (1 &minus; <i>x</i><sup>2</sup>)
 is always positive within its designated subdomain,
 so there is no problem in applying a fractional exponent.
@@ -604,8 +638,8 @@ so there is no problem in applying a fractional exponent.
 <p>
 It seems plausible (though I haven't proven this)
 an optimum should be at (or at least near)
-a combination of <i>d</i> and <i>c</i> that satisfy
-<i>r</i>(<i>d</i>, <i>c</i>) = 0.
+a combination of <i>d</i> and <i>s</i> that satisfy
+<i>r</i>(<i>d</i>, <i>s</i>) = 0.
 This is equivalent to:
 </p>
 <div class="formula">
@@ -617,37 +651,37 @@ This is equivalent to:
 <span class="par1">(</span>
 2<i>i</i>
 (2<i>d</i> &minus; 2<i>i</i>)
-<span class="par1">)<sup><i>c</i></sup></span>
+<span class="par1">)<sup><i>s</i></sup></span>
 &minus;
 <span class="par1">(</span>
 (2<i>i</i> + 1)
 (2<i>d</i> &minus; 2<i>i</i> &minus; 1)
-<span class="par1">)<sup><i>c</i></sup></span>
+<span class="par1">)<sup><i>s</i></sup></span>
 = 0
 </div>
 <p>
 Take for example <i>d</i> = 4. The equation then becomes:
 </p>
 <div class="formula">
-16<sup>c</sup> + 2 &sdot; 12<sup>c</sup>
-&minus; 2 &sdot; 7<sup>c</sup> &minus; 2 &sdot; 15<sup>c</sup>
+16<sup>s</sup> + 2 &sdot; 12<sup>s</sup>
+&minus; 2 &sdot; 7<sup>s</sup> &minus; 2 &sdot; 15<sup>s</sup>
 = 0
 </div>
 <p>
-One of the roots of this equation is <i>c</i> &asymp; 4.67970975809363.
+One of the roots of this equation is <i>s</i> &asymp; 4.67970975809363.
 The resulting function <i>g</i> looks pretty straight at first sight.
 </p>
 <p>
-<a href="overlap468.png"><img src="overlap468.png" alt="Overlap at c=4.68" width="222" height="136" /></a>
+<a href="overlap468.png"><img src="overlap468.png" alt="Overlap at s=4.68" width="222" height="136" /></a>
 </p>
 <p>
-Of course, even with an 'optimal' <i>c</i>,
+Of course, even with an 'optimal' <i>s</i>,
 function <i>g</i> will never be a straight line,
 as it is still the sum of a finite number of polynomials.
 Here is the same 'line', with the Y-axis scaled a factor 300.
 </p>
 <p>
-<a href="scaled468.png"><img src="scaled468.png" alt="Overlap at c=4.68" width="363" height="135" /></a>
+<a href="scaled468.png"><img src="scaled468.png" alt="Overlap at s=4.68" width="363" height="135" /></a>
 </p>
 <p>
 Notice the extremes identified earlier
@@ -656,7 +690,7 @@ are no longer opposing extremes; in the diagram above they are both minima!
 There is a new maximum in between where <i>g</i>'(<i>x</i>) = 0.
 </p>
 <p>
-It is also worth noting that there is typically more than one value of <i>c</i>
+It is also worth noting that there is typically more than one value of <i>s</i>
 that is an optimum for any given <i>d</i>.
 In fact, the number of optima appears to be equal to <i>d</i> &minus; 1
 (I haven't proven this).
@@ -665,14 +699,14 @@ Here is an exhaustive list for <i>d</i> &le; 5.
 <table class="optima">
 <tr>
 <td><i>d</i></td>
-<td>equation to calculate optimal <i>c</i></td>
-<td>optimal <i>c</i></td>
+<td>equation to calculate optimal <i>s</i></td>
+<td>optimal <i>s</i></td>
 <td>range(<i>g</i>(<i>x</i>))</td>
 </tr>
 <tr>
 <td>2</td>
 <td>
-4<sup><i>c</i></sup> &minus; 2 &sdot; 3<sup><i>c</i></sup>
+4<sup><i>s</i></sup> &minus; 2 &sdot; 3<sup><i>s</i></sup>
 = 0
 </td>
 <td>2.40942
@@ -681,8 +715,8 @@ Here is an exhaustive list for <i>d</i> &le; 5.
 <tr>
 <td rowspan="2">3</td>
 <td rowspan="2">
-2 &sdot; 8<sup><i>c</i></sup>
-&minus; 2 &sdot; 5<sup><i>c</i></sup> &minus; 9<sup><i>c</i></sup>
+2 &sdot; 8<sup><i>s</i></sup>
+&minus; 2 &sdot; 5<sup><i>s</i></sup> &minus; 9<sup><i>s</i></sup>
 = 0
 </td>
 <td>2.239</td>
@@ -695,8 +729,8 @@ Here is an exhaustive list for <i>d</i> &le; 5.
 <tr>
 <td rowspan="3">4</td>
 <td rowspan="3">
-16<sup><i>c</i></sup> + 2 &sdot; 12<sup><i>c</i></sup>
-&minus; 2 &sdot; 7<sup><i>c</i></sup> &minus; 2 &sdot; 15<sup><i>c</i></sup>
+16<sup><i>s</i></sup> + 2 &sdot; 12<sup><i>s</i></sup>
+&minus; 2 &sdot; 7<sup><i>s</i></sup> &minus; 2 &sdot; 15<sup><i>s</i></sup>
 = 0
 </td>
 <td>2.16937</td>
@@ -713,9 +747,9 @@ Here is an exhaustive list for <i>d</i> &le; 5.
 <tr>
 <td rowspan="4">5</td>
 <td rowspan="4">
-2 &sdot; 16<sup><i>c</i></sup> + 2 &sdot; 24<sup><i>c</i></sup>
-&minus; 2 &sdot; 9<sup><i>c</i></sup>
-&minus; 2 &sdot; 21<sup><i>c</i></sup> &minus; 25<sup><i>c</i></sup>
+2 &sdot; 16<sup><i>s</i></sup> + 2 &sdot; 24<sup><i>s</i></sup>
+&minus; 2 &sdot; 9<sup><i>s</i></sup>
+&minus; 2 &sdot; 21<sup><i>s</i></sup> &minus; 25<sup><i>s</i></sup>
 = 0
 </td>
 <td>2.13128</td>
@@ -739,24 +773,25 @@ Unsurprisingly, more overlap (higher <i>d</i>) gives <i>g</i> a smaller range,
 meaning the grid lines will be harder to spot.
 Overlap comes with a price (more calculations), so it's a trade-off.
 Whatever <i>d</i> you choose,
-you may want to pick the accompanying <i>c</i> with the smallest range
+you may want to pick the accompanying <i>s</i> with the smallest range
 (shown in bold).
 </p>
-<h2>Zero range</h2>
+<h2>Alternate carrier</h2>
 <p>
 We managed to make the range of <i>g</i> very small, though not zero.
-Basically, we did this by shaping the curves
+Basically, we did this by shaping the curves of <i>c</i>
 so that they (almost) even each other out.
 It is worth noting that for <i>d</i> = 2,
 there is an easy alternative that <i>does</i> make the range zero.
 In other words, it perfectly flattens the line defined by <i>g</i>.
-Just replace (1 &minus; <i>x</i><sup>2</sup>)<sup><i>c</i></sup>
+Just replace
+<i>c</i>(<i>x</i>) = (1 &minus; <i>x</i><sup>2</sup>)<sup><i>s</i></sup>
 with one of these approximations that have better symmetry (like a mirrored
 <a href="https://en.wikipedia.org/wiki/Sigmoid_function">sigmoid function</a>):
 </p>
 <ul>
-<li>&frac12;(1 + cos &pi;<i>x</i>)</li>
-<li>1 &minus;
+<li><i>c</i>(<i>x</i>) = &frac12;(1 + cos &pi;<i>x</i>)</li>
+<li><i>c</i>(<i>x</i>) = 1 &minus;
 <a href="https://en.wikipedia.org/wiki/Smoothstep">smoothstep</a>(|<i>x</i>|)
 </li>
 </ul>
@@ -764,22 +799,40 @@ with one of these approximations that have better symmetry (like a mirrored
 Since <i>d</i> = 2 looked pretty bad in my experiments,
 I will ignore this possibility for now.
 </p>
+<h2>Alternate message</h2>
+<p>
+So far, we have used a simple linear equation
+as the 'message' function <i>m</i>:
+</p>
+<div class="formula">
+<i>m</i>(<i>x</i>) = <i>a x</i> + <i>b</i>
+</div>
+<p>
+It may be worth investigating other functions.
+In theory, any function <i>m</i> will do that is smooth on subdomain (-1, 1).
+The carrier ensures <i>f</i> will be smooth on the endpoints.
+</p>
+<p>
+For example, simply making <i>b</i> zero seems to make <i>f</i> band-limited
+without having a big visual impact on the resulting noise.
+I still need to investigate this further.
+</p>
 <h2>Performance trade-off</h2>
 <p>
 Evaluating <i>g</i>(<i>x</i>)
-involves <i>d</i> exponentiations with exponent <i>c</i>.
+involves <i>d</i> exponentiations with exponent <i>s</i>.
 Exponentiation with a fractional exponent
 is typically more expensive than an integer exponent.
-Instead of pursuing an optimal <i>c</i>,
-one could also settle for an integer <i>c</i>
-and instead increase <i>n</i> until the desired range has been reached.
-That is a trade-off, since increasing <i>n</i> also comes with a price,
+Instead of pursuing an optimal <i>s</i>,
+one could also settle for an integer <i>s</i>
+and instead increase <i>d</i> until the desired range has been reached.
+That is a trade-off, since increasing <i>d</i> also comes with a price,
 especially in higher dimensions.
 </p>
 <p>
 For example, suppose you demand a range &lt; 10<sup>&minus;4</sup>.
 With fractional exponents, this is feasible with an overlap <i>d</i> of 4
-(when combined with <i>c</i> = 7.80135).
+(when combined with <i>s</i> = 7.80135).
 For one-dimensional noise,
 evaluation of <i>g</i>(<i>x</i>) would then require 4 exponentiations.
 For 2D noise (see below), you'd need 4<sup>2</sup> = 16 exponentiations,
@@ -787,7 +840,7 @@ and in 3D, the number is 4<sup>3</sup> = 64.
 </p>
 <p>
 With integer exponents, you would be forced to increase <i>d</i> to 6.
-The exponent <i>c</i> has to be 7.
+The exponent <i>s</i> has to be 7.
 Such an exponentiation can be implemented with
 <a href="https://en.wikipedia.org/wiki/Addition-chain_exponentiation">4 multiplications</a>.
 The total number of multiplications in one, two and three dimensions will be
@@ -796,8 +849,9 @@ The total number of multiplications in one, two and three dimensions will be
 4 &sdot; 6<sup>3</sup> = 864, respectively.
 When optimizing for speed, you should carefully investigate
 how exponentiation performs compared to multiplication.
-Also keep in mind that exponentiation could probably be accelerated with a
-lookup table and interpolation, especially since the base is always in [0, 1].
+Also keep in mind that
+exponentiation could probably be accelerated with a lookup table and interpolation,
+especially since the exponent is a constant, and the base is always in [0, 1].
 </p>
 <h2>1D function</h2>
 <p>
@@ -832,7 +886,7 @@ All we have to do now is bring the random numbers back into the formula:
 <i>h</i><sub>2</sub>(<i>i</i>)
 <span class="par1">) (</span>
 1 &minus; <i>x</i><sup>2</sup>
-<span class="par1">)<sup><i>c</i></sup></span>
+<span class="par1">)<sup><i>s</i></sup></span>
 </div>
 <p>
 The number of hash calculations
@@ -893,9 +947,9 @@ We already saw this formula at the start of this document:
 <i>h</i><sub>3</sub>(<i>i</i>, <i>j</i>)
 <span class="par1">) (</span>
 1 &minus; <i>x</i><sup>2</sup>
-<span class="par1">)<sup><i>c</i></sup> (</span>
+<span class="par1">)<sup><i>s</i></sup> (</span>
 1 &minus; <i>y</i><sup>2</sup>
-<span class="par1">)<sup><i>c</i></sup></span>
+<span class="par1">)<sup><i>s</i></sup></span>
 </div>
 <p>
 The number of hash calculations
@@ -914,6 +968,15 @@ You may be better off with
 <a href="https://en.wikipedia.org/wiki/Simplex_noise">Simplex noise</a> or
 <a href="https://en.wikipedia.org/wiki/OpenSimplex_noise">OpenSimplex noise</a>.
 </p>
+<h2>Analysis</h2>
+<p>
+I am doing amplitude analysis by averaging 10,000 noise replicates, using
+<a href="../c/amplitude.c">amplitude.c</a>.
+I see directional artifacts in the variance (&lt;10%), but none in the mean.
+</p>
+<p>
+I will use ImageMagick to do spectral analysis based on FFT.
+</p>
 <h2>Implementations</h2>
 <p>
 You can plot the 1D curve in
@@ -922,9 +985,9 @@ using the following stack of formulas:
 </p>
 <ul style="font-family:monospace">
 <li>g\left(x\right)=\sum_{i=0}^{d-1}f\left(d\operatorname{floor}\left(\frac{x+i}{d}\right)-i,\ 2\operatorname{mod}\left(\frac{x+i}{d},1\right)-1\right)</li>
-<li>f\left(i,\ x\right)=\left(h_{1}\left(i\right)x+h_{2}\left(i\right)\right)\left(1-x^{2}\right)^{c}</li>
+<li>f\left(i,\ x\right)=\left(h_{1}\left(i\right)x+h_{2}\left(i\right)\right)\left(1-x^{2}\right)^{s}</li>
 <li>d=4</li>
-<li>c=4.67970975809363</li>
+<li>s=4.67970975809363</li>
 <li>h_{1}\left(i\right)=2l_{1}\left[\operatorname{mod}\left(i,\operatorname{length}\left(l_{1}\right)\right)+1\right]-1</li>
 <li>h_{2}\left(i\right)=2l_{2}\left[\operatorname{mod}\left(i,\operatorname{length}\left(l_{2}\right)\right)+1\right]-1</li>
 <li>l_{1}=\operatorname{random}\left(100\right)</li>

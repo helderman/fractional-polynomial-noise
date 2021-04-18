@@ -38,8 +38,9 @@ vec3 hash32(vec2 p)
 // Calculates the height for a single layer
 float f(in vec2 cell, in vec2 local)
 {
-	vec2 hill = 1.0 - local * local;
-	return dot(hash32(cell) - 0.5, vec3(local, 1.0)) * pow(hill.x * hill.y, u_smooth);
+	vec2 carrier = 1.0 - local * local;
+	return dot(hash32(cell) - 0.5, vec3(local, 1.0)) *
+		pow(carrier.x * carrier.y, u_smooth);
 }
 
 // Calculates the total height, using all layers
