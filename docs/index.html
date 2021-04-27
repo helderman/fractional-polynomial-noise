@@ -12,6 +12,9 @@ Ruud Helderman
 April 2021<br />
 <a href="../LICENSE">MIT licensed</a>
 </p>
+<p style="font-style:italic">
+Under construction.
+</p>
 <h2>Purpose</h2>
 <p>
 Experimental algorithm for
@@ -52,9 +55,10 @@ If this is an issue, then please consider using
 instead.
 </li>
 <li>
-The calculation involves multiple exponentiations,
-which may be computationally expensive on some platforms.
-(May be optimized using a lookup table.)
+The calculation involves
+multiple hash calculations and multiple exponentiations.
+These are likely to be computationally expensive,
+but various optimizations are possible.
 </li>
 </ul>
 <h2>Example</h2>
@@ -65,8 +69,8 @@ Click the image to see it in full size (1024 &times; 1024 pixels).
 <a href="noise2D.png"><img src="noise2D.png" alt="Demo of Fractional Polynomial Noise" width="256" height="256" /></a>
 </p>
 <p>
-The image has been produced by
-<a href="../c/amplitude.c">this C program</a>,
+The image has been produced with the help of
+<a href="../c/fpn.c">this C module</a>,
 which implements the following formula:
 </p>
 <div class="formula">
@@ -198,10 +202,19 @@ but the second derivative is not.
 </p>
 <p>
 We can make the curve even smoother by aiming for G<sup>2</sup> continuity.
-Again, this is not too hard:
-we add yet another psuedo-random number to every endpoint,
-this time representing the desired value for the <i>second</i> derivative,
-and we use a <i>fifth</i>-degree polynomial to connect the endpoints.
+Again, this is not too hard: for every endpoint,
+explicitly specify a value for the <i>second</i> derivative,
+and obey that curve as we connect endpoints.
+Typically, this value is zero.
+It is also possible to introduce yet another pseudo-random number,
+specifically for the second derivative of the endpoint,
+but I suppose that level of randomness is typically considered overkill.
+</p>
+<p>
+G<sup>2</sup> continuity demands
+a fifth-degree polynomial to connect the endpoints.
+For G<sup>3</sup>, you need a 7<sup>th</sup>-degree polynomial.
+The smoother the line, the more elaborate the function becomes.
 </p>
 <p>
 All this is nothing new:
@@ -210,9 +223,8 @@ and later fifth-degree polynomials,
 in the way it interpolated between gradients
 (<a href="https://en.wikipedia.org/wiki/Smoothstep">smoothstep</a>).
 But it was at this point that I was wondering:
-is it really necessary to involve so many pseudo-random numbers
-in the calculation of a single subfunction?
-Four for G<sup>1</sup> continuity, six for G<sup>2</sup>, and so on.
+is it really necessary to have so many coefficients in the polynomial?
+Three for G<sup>1</sup> continuity, four for G<sup>2</sup>, and so on.
 Please note, I am not worried about the performance of these calculations.
 I am just concerned about the complexity of any such formula.
 I like to keep things as simple as possible.
@@ -305,7 +317,7 @@ to produce a function without valleys:
 <a href="overlap.png"><img src="overlap.png" alt="Overlapping curves" width="330" height="100" /></a>
 </p>
 <p>
-The problem is, this is more difficult for higher values of <i>s</i>.
+This is more difficult for higher values of <i>s</i>.
 Look what happens to the previous picture when <i>s</i> = 9:
 </p>
 <p>
@@ -314,6 +326,7 @@ Look what happens to the previous picture when <i>s</i> = 9:
 <p>
 This is because the increasing demand for smoothness at the endpoints,
 makes the 'valleys' around the endpoints wider, and the hills narrower.
+Below, I will show how to compensate this by increasing the amount of overlap.
 </p>
 <h2>Carrier and message</h2>
 <p>
@@ -368,12 +381,11 @@ it becomes possible to witness
 just how effective overlaps will be to fill up the 'valleys'.
 Basically, this is the same as using constant coefficients
 <i>a</i> = 0 and <i>b</i> = 1 rather than random numbers.
-Ideally, it should result in a perfectly flat terrain.
 </p>
 <p>
-Let's continue tweaking <i>g</i>.
+Let's continue tweaking function <i>g</i> from the previous section.
 Overlaps warrant some more transformations on <i>x</i>.
-We must be able to stretch the curve, making its period <i>d</i>.
+We must be able to stretch the curve horizontally, making its period <i>d</i>.
 We must also be able to change its phase by <i>i</i>.
 </p>
 <div class="formula">
@@ -395,8 +407,7 @@ Now we can overlap <i>d</i> curves with phase 0, 1, ... , <i>d</i> &minus; 1.
 	<div class="sigma">&Sigma;</div>
 	<div><i>i</i> = 0</div>
 </div>
-<i>c</i>
-(2<span class="par1">{</span>
+<i>c</i>(2<span class="par1">{</span>
 <table>
 	<tr><td><i>x</i> + <i>i</i></td></tr>
 	<tr><td class="denominator"><i>d</i></td></tr>
@@ -437,10 +448,13 @@ overlaps are basically our substitute for the interpolations found in other nois
 But where other algorithms require the interpolation formula to be rewritten
 when there is a need to involve more neighbors,
 we only need to increase a parameter <i>d</i>.
-It may not be the most efficient approach, but it sure is simple.
+It may not seem like the most efficient approach,
+but it parallelizes quite well,
+and it sure is simple.
 </p>
 <h2>Tuning the parameters</h2>
 <p>
+Yes, I am reluctant to increase <i>d</i> too far.
 Fortunately, we have another parameter in our formula:
 it appears the continuity <i>s</i> plays an important role
 in shaping the curves in such a way that they even out each other.
@@ -458,7 +472,7 @@ and eventually they cannot even fill up 25% of their domain,
 meaning that an overlap <i>d</i> of 4 is no longer sufficient.
 </p>
 <p>
-Basically we are trying to minimize the range of function <i>g</i>,
+Basically we are trying to minimize the <i>range</i> of function <i>g</i>,
 i.e. the difference between the two extremes of <i>g</i>.
 Extremes can be found at the following points on the X-axis.
 </p>
@@ -781,24 +795,63 @@ you may want to pick the accompanying <i>s</i> with the smallest range
 We managed to make the range of <i>g</i> very small, though not zero.
 Basically, we did this by shaping the curves of <i>c</i>
 so that they (almost) even each other out.
-It is worth noting that for <i>d</i> = 2,
+It is worth noting that for the combination <i>d</i> = 2, <i>s</i> = 2.40942,
 there is an easy alternative that <i>does</i> make the range zero.
 In other words, it perfectly flattens the line defined by <i>g</i>.
-Just replace
-<i>c</i>(<i>x</i>) = (1 &minus; <i>x</i><sup>2</sup>)<sup><i>s</i></sup>
-with one of these approximations that have better symmetry (like a mirrored
-<a href="https://en.wikipedia.org/wiki/Sigmoid_function">sigmoid function</a>):
+Just take some kind of mirrored
+<a href="https://en.wikipedia.org/wiki/Sigmoid_function">sigmoid function</a>
+<i>p</i> that approximates <i>c</i> on domain (&minus;1, +1),
+for example:
 </p>
+<div class="formula">
 <ul>
-<li><i>c</i>(<i>x</i>) = &frac12;(1 + cos &pi;<i>x</i>)</li>
-<li><i>c</i>(<i>x</i>) = 1 &minus;
+<li><i>c</i>(<i>x</i>) &asymp; <i>p</i><sub>2</sub>(<i>x</i>) = (cos
+<table><tr><td>&pi;</td></tr><tr><td class="denominator">2</td></tr></table>
+<i>x</i>)<sup>2</sup></li>
+<li><i>c</i>(<i>x</i>) &asymp; <i>p</i><sub>2</sub>(<i>x</i>) = 1 &minus;
 <a href="https://en.wikipedia.org/wiki/Smoothstep">smoothstep</a>(|<i>x</i>|)
 </li>
 </ul>
+</div>
 <p>
-Since <i>d</i> = 2 looked pretty bad in my experiments,
-I will ignore this possibility for now.
+<i>d</i> = 2 is not very interesting (it looked pretty bad in my experiments),
+but similar alternatives may exist for other optima.
+For example, any approximation <i>p</i><sub>2</sub> from the list above
+can be transformed into an approximation of <i>c</i>
+for the combination <i>d</i> = 4, <i>s</i> &asymp; 4.67971
+using the following formula:
 </p>
+<div class="formula">
+<i>c</i>(<i>x</i>) &asymp;
+<i>p</i><sub>4</sub>(<i>x</i>) = <i>p</i><sub>2</sub>(<i>x</i>) &minus;
+<table>
+	<tr><td><i>p</i><sub>2</sub>(2|<i>x</i>| &minus; 1)</td></tr>
+	<tr><td class="denominator">4</td></tr>
+</table>
+</div>
+<p>
+As for the cosine-based approximation,
+we can generalize this for every even value of <i>d</i>:
+</p>
+<div class="formula">
+<i>c</i>(<i>x</i>) &asymp; <i>p</i><sub><i>d</i></sub> (<i>x</i>) = (cos
+<table><tr><td>&pi;</td></tr><tr><td class="denominator">2</td></tr></table>
+<i>x</i>)<sup><i>d</i></sup>
+</div>
+<p>
+That may even work for every approximation <i>p</i><sub>2</sub>.
+However, many approximations will have 'bumps',
+especially for relatively small values of <i>d</i>.
+</p>
+<div class="formula">
+<i>c</i>(<i>x</i>) &asymp; <i>p</i><sub><i>d</i></sub> (<i>x</i>) =
+<span class="par1">(</span>
+<i>p</i><sub>2</sub>(<i>x</i>)
+<span class="par1">)<sup><table>
+	<tr><td><i>d</i></td></tr>
+	<tr><td class="denominator">2</td></tr>
+</table></sup></span>
+</div>
 <h2>Alternate message</h2>
 <p>
 So far, we have used a simple linear equation
@@ -809,12 +862,15 @@ as the 'message' function <i>m</i>:
 </div>
 <p>
 It may be worth investigating other functions.
-In theory, any function <i>m</i> will do that is smooth on subdomain (-1, 1).
+In theory, any function <i>m</i> will do
+that is smooth on subdomain (&minus;1, +1).
 The carrier ensures <i>f</i> will be smooth on the endpoints.
 </p>
 <p>
-For example, simply making <i>b</i> zero seems to make <i>f</i> band-limited
-without having a big visual impact on the resulting noise.
+For example, <i>m</i>(<i>x</i>) = <i>a x</i>
+(in other words, simply making <i>b</i> zero)
+seems to make <i>f</i> band-limited,
+at the cost of more directional artifacts (though less than in Perlin noise).
 I still need to investigate this further.
 </p>
 <h2>Performance trade-off</h2>
@@ -840,7 +896,7 @@ and in 3D, the number is 4<sup>3</sup> = 64.
 </p>
 <p>
 With integer exponents, you would be forced to increase <i>d</i> to 6.
-The exponent <i>s</i> has to be 7.
+The exponent <i>s</i> has to be 7; see the table of optima.
 Such an exponentiation can be implemented with
 <a href="https://en.wikipedia.org/wiki/Addition-chain_exponentiation">4 multiplications</a>.
 The total number of multiplications in one, two and three dimensions will be
@@ -968,16 +1024,60 @@ You may be better off with
 <a href="https://en.wikipedia.org/wiki/Simplex_noise">Simplex noise</a> or
 <a href="https://en.wikipedia.org/wiki/OpenSimplex_noise">OpenSimplex noise</a>.
 </p>
-<h2>Analysis</h2>
+<h2>Amplitude analysis</h2>
 <p>
-I am doing amplitude analysis by averaging 10,000 noise replicates, using
+For <i>d</i> = 4, <i>s</i> = 4.67970975809363,
+I have done amplitude analysis using
 <a href="../c/amplitude.c">amplitude.c</a>.
-I see directional artifacts in the variance (&lt;10%), but none in the mean.
+I let the program generate a 2D noise image 1,000,000 times,
+calculating the mean and the variance for each individual pixel.
 </p>
 <p>
-I will use ImageMagick to do spectral analysis based on FFT.
+<img src="fpn_1M_mean.png" alt="Mean" />
+<img src="fpn_1M_vari.png" alt="Variance" />
+</p>
+<p>
+Grid lines are clearly visible in the variance,
+but the 'depth' of these grooves is subtle.
+The variance varied between
+0.447760 (represented by black pixels in the image) and
+0.456864 (the white pixels).
+That's a difference of only 2%.
+That suggests grid lines can be detected statistically,
+but not with the naked eye.
+</p>
+<p>
+I did the same test with one of the alternate carriers (the cosine).
+As this carrier is a perfect fit, I was expecting less directional artifacts,
+but instead the grid lines were more prominent (variance differs by 5.8%).
+Needs investigation.
+</p>
+<p>
+To my surprise, doing the same analysis on simplex noise
+was giving a strong orthogonal grid.
+That should not be happening, as simplex noise uses coordinate skewing.
+Grid lines, if any, should be triangular.
+I must be doing something wrong.
+Needs investigation.
+</p>
+<h2>Spectrum analysis</h2>
+<p>
+For <i>d</i> = 4, <i>s</i> = 4.67970975809363,
+I tried to do spectrum analysis using
+<a href="../c/spectrum.c">spectrum.c</a>.
+I used FFTW to generate the magnitude of the
+<a href="https://en.wikipedia.org/wiki/Discrete_Fourier_transform">discrete Fourier transform</a>,
+but the result was dominated by
+horizontal and vertical lines running though the center.
+Not only for my own algorithm but also for Perlin and simplex noise.
+I must be doing something wrong.
+Needs investigation.
 </p>
 <h2>Implementations</h2>
+<p>
+The following implementations were written with a focus on readability,
+not on execution speed.
+</p>
 <p>
 You can plot the 1D curve in
 <a href="https://desmos.com/calculator">Desmos</a>
@@ -994,9 +1094,40 @@ using the following stack of formulas:
 <li>l_{2}=\operatorname{random}\left(100\right)</li>
 </ul>
 <p>
-Implementations in 2D can be found on:<br />
+I made a 2D reference implementations in C:
+<a href="../c/fpn.c">fpn.c</a>
+</p>
+<p>
+Other implementations can be found on:<br />
 <a href="https://helderman.github.io/fractional-polynomial-noise/">https://helderman.github.io/fractional-polynomial-noise/</a>
 </p>
+<h2>Optimizations</h2>
+<p>
+<a href="https://en.wikipedia.org/wiki/Perlin_noise">Perlin noise</a>
+may not be perfect, but it sure is <b>fast</b>.
+My reference implementations of fractional polynomial noise
+are <i>much</i> slower, especially for higher values of <i>d</i>.
+Fortunately, there are ways to greatly speed it up.
+</p>
+<ul>
+<li>Parallelization.
+Evaluation of function <i>g</i>
+involves <i>d</i> <sup>2</sup> evaluations of function <i>f</i>.
+These evaluations are independent of each other,
+so if possible, do them in parallel, for example by
+<a href="https://en.wikipedia.org/wiki/Vector_processor">vectorization</a>.
+</li>
+<li>Cache hash calculations.
+For example, in 1D, the same two hash values
+<i>h</i><sub>1</sub>(<i>i</i>) and <i>h</i><sub>2</sub>(<i>i</i>)
+are used across all of <i>x</i> &isin; [<i>i</i>, <i>i</i> + <i>d</i>).
+In 2D, every hash can be reused across a <i>d</i> &times; <i>d</i> area.
+</li>
+<li>Depending on the desired resolution of the output
+and the amount of memory you are willing to sacrifice,
+you could speed up calculation of the carrier with a lookup table.
+</li>
+</ul>
 <h2>Disclaimer</h2>
 <p>
 I am not a mathematician,
@@ -1010,13 +1141,18 @@ my apologies for re-inventing the wheel.
 </p>
 <h2>Credits</h2>
 <p>
-All diagrams have been made using
+All diagrams have been rendered by
 <a href="https://www.desmos.com/calculator">Desmos</a>.
 </p>
 <p>
 Thanks to
 <a href="https://www.wolframalpha.com/">WolframAlpha</a>
 for helping me solve a good number of equations.
+</p>
+<p>
+Thanks to
+<a href="http://www.fftw.org/">FFTW</a>
+for helping me do spectrum analysis.
 </p>
 </body>
 </html>

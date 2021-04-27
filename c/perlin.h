@@ -1,4 +1,4 @@
-/* perlin.h - Classical Perlin Noise in 2D
+/* perlin.h - Perlin Noise in 2D
  */
 
 #define PERLIN_XSIZE	16

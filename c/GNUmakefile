@@ -3,16 +3,17 @@
 # MIT License
 # https://github.com/helderman/fractional-polynomial-noise
 #
-# Makefile for Windows (NMAKE)
-# spectrum.exe needs FFTW3; see http://www.fftw.org/install/windows.html
+# Makefile for GNU Make
+# Needs FFTW; see
+# http://www.fftw.org/fftw3_doc/Installation-and-Customization.html
 
-all: amplitude.exe spectrum.exe
+all: amplitude spectrum
 
 C = output.c fpn.c fpnsin.c perlin.c simplex.c analysis.c
 H = output.h fpn.h fpnsin.h perlin.h simplex.h defines.h
 
-amplitude.exe: $(C) $(H)
-	cl /Fe$@ $(C)
+amplitude: $(C) $(H)
+	$(CC) -o$@ $(C)
 
-spectrum.exe: $(C) fft.c $(H) fft.h
-	cl /Fe$@ /DSPECTRUM /Ifftw3 $(C) fft.c libfftw3-3.lib
+spectrum: $(C) fft.c $(H) fft.h
+	$(CC) -o$@ -DSPECTRUM -lfftw3 $(C) fft.c

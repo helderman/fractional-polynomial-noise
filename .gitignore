@@ -1,3 +1,5 @@
 *.exe
 *.obj
-*.pgm
+libfftw3-3.*
+c/fftw3/
+c/test*/
