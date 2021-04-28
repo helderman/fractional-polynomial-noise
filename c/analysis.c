@@ -10,6 +10,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include "defines.h"
 #include "output.h"
 #include "fpn.h"
@@ -81,7 +82,7 @@ static double (*pick_noise(const char *algorithm))(double, double)
 
 void replicate(const char *algorithm, int samples)
 {
-	int x, y, z;
+	int x, y;
 	double (*noise)(double, double) = pick_noise(algorithm);
 #ifdef SPECTRUM
 	double *p = buf;

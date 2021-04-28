@@ -4,8 +4,5 @@
  * https://github.com/helderman/fractional-polynomial-noise
  */
 
-#define FPNSIN_XSIZE	32
-#define FPNSIN_YSIZE	32
-
 extern void fpnsin_init(double weights[3]);
 extern double fpnsin_noise(double x, double y);

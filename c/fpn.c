@@ -6,6 +6,7 @@
 
 #include <math.h>
 #include <stdlib.h>
+#include "defines.h"
 #include "fpn.h"
 
 #ifndef D
@@ -18,7 +19,7 @@
 
 /* Collection of pre-calculated random numbers */
 /* Each number has uniform distribution over range [-1.0, +1.0] */
-static double rnd[3][FPN_YSIZE+D-1][FPN_XSIZE+D-1];
+static double rnd[3][YUNITS+D-1][XUNITS+D-1];
 
 /* Hash implemented as a lookup table; all random numbers are pre-calculated */
 /* Deliberately using a real PRNG to keep any statistical analysis clean */
@@ -68,9 +69,9 @@ void fpn_init(double weights[3])
 	/* Pre-calculate all necessary random numbers */
 	for (z = 0; z < 3; z++)
 	{
-		for (y = 0; y < FPN_YSIZE+D-1; y++)
+		for (y = 0; y < YUNITS+D-1; y++)
 		{
-			for (x = 0; x < FPN_XSIZE+D-1; x++)
+			for (x = 0; x < XUNITS+D-1; x++)
 			{
 				/* Using rand(), despite considered harmful.
 				 * Its limited range, short period and poor
@@ -89,7 +90,7 @@ void fpn_init(double weights[3])
 /* Calculate noise for specific unit coordinates */
 double fpn_noise(double x, double y)
 {
-	return x >= 0 && x < FPN_XSIZE && y >= 0 && y < FPN_YSIZE
+	return x >= 0 && x < XUNITS && y >= 0 && y < YUNITS
 		? g(x, y)
 		: 0;
 }

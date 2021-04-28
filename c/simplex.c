@@ -22,6 +22,8 @@
  */
 
 #include <math.h>
+#include <stdlib.h>
+#include "defines.h"
 #include "simplex.h"
 
 typedef struct { double x, y, z; } Grad3;
@@ -364,7 +366,7 @@ void simplex_init(void)
 /* Calculate noise for specific unit coordinates */
 double simplex_noise(double x, double y)
 {
-	return x >= 0 && x < SIMPLEX_XSIZE && y >= 0 && y < SIMPLEX_YSIZE
+	return x >= 0 && x < XUNITS && y >= 0 && y < YUNITS
 		? noise3(x, y, salt)
 		: 0;
 }

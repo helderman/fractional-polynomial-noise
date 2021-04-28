@@ -1,4 +1,4 @@
-/* fft.c - fast fourier transform (wrapper around FFTW)
+/* fft.c - fast Fourier transform (wrapper around FFTW)
  * Ruud Helderman, April 2021
  * MIT License
  * https://github.com/helderman/fractional-polynomial-noise
@@ -23,7 +23,7 @@ static double magnitude(fftw_complex c)
 	double m2 = r*r + i*i;
 	return m2;
 	//return sqrt(m2);
-	//return log(1.0 + m2);
+	//return log(100000.0 + m2);
 }
 
 double *fft_init(void)

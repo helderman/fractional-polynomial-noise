@@ -7,6 +7,8 @@
  */
 
 #include <math.h>
+#include <stdlib.h>
+#include "defines.h"
 #include "perlin.h"
 
 static double fade(double t) { return t * t * t * (t * (t * 6 - 15) + 10); }
@@ -72,7 +74,7 @@ void perlin_init(void)
 /* Calculate noise for specific unit coordinates */
 double perlin_noise(double x, double y)
 {
-	return x >= 0 && x < PERLIN_XSIZE && y >= 0 && y < PERLIN_YSIZE
+	return x >= 0 && x < XUNITS && y >= 0 && y < YUNITS
 		? noise(x, y, salt)
 		: 0;
 }

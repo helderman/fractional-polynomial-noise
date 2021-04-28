@@ -1,5 +1,7 @@
 *.exe
 *.obj
 libfftw3-3.*
+c/amplitude*
+c/spectrum*
 c/fftw3/
 c/test*/
