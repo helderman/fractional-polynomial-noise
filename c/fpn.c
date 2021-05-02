@@ -19,13 +19,13 @@
 
 /* Collection of pre-calculated random numbers */
 /* Each number has uniform distribution over range [-1.0, +1.0] */
-static double rnd[3][YUNITS+D-1][XUNITS+D-1];
+static double rnd[3][YUNITS][XUNITS];
 
 /* Hash implemented as a lookup table; all random numbers are pre-calculated */
-/* Deliberately using a real PRNG to keep any statistical analysis clean */
+/* By using a real PRNG, I hope to keep any statistical analysis clean */
 static double hash(int x, int y, int z)
 {
-	return rnd[z][y+D-1][x+D-1];
+	return rnd[z][YTILE(y)][XTILE(x)];
 }
 
 /* The fractional polynomial that drives the gradient noise */
@@ -69,9 +69,9 @@ void fpn_init(double weights[3])
 	/* Pre-calculate all necessary random numbers */
 	for (z = 0; z < 3; z++)
 	{
-		for (y = 0; y < YUNITS+D-1; y++)
+		for (y = 0; y < YUNITS; y++)
 		{
-			for (x = 0; x < XUNITS+D-1; x++)
+			for (x = 0; x < XUNITS; x++)
 			{
 				/* Using rand(), despite considered harmful.
 				 * Its limited range, short period and poor
@@ -90,7 +90,5 @@ void fpn_init(double weights[3])
 /* Calculate noise for specific unit coordinates */
 double fpn_noise(double x, double y)
 {
-	return x >= 0 && x < XUNITS && y >= 0 && y < YUNITS
-		? g(x, y)
-		: 0;
+	return g(x, y);
 }

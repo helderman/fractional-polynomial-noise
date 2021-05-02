@@ -342,6 +342,16 @@ static double noise4(double x, double y, double z, double w)
     return 27.0 * (n0 + n1 + n2 + n3 + n4);
 }
 
+/* Simple Hann window, to prevent edge artifacts in FFT */
+/* TODO: implement Moisan's "periodic + smooth image decomposition" instead */
+static double make_tileable(double x, double y)
+{
+	double s =
+		sin(3.14159265358979323846 * x / XUNITS) *
+		sin(3.14159265358979323846 * y / YUNITS);
+	return s * s;
+}
+
 static int salt;
 
 /* Initialize */
@@ -367,6 +377,6 @@ void simplex_init(void)
 double simplex_noise(double x, double y)
 {
 	return x >= 0 && x < XUNITS && y >= 0 && y < YUNITS
-		? noise3(x, y, salt)
+		? make_tileable(x, y) * noise3(x, y, salt)
 		: 0;
 }

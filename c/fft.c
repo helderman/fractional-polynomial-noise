@@ -21,9 +21,9 @@ static double magnitude(fftw_complex c)
 {
 	double r = c[0], i = c[1];
 	double m2 = r*r + i*i;
-	return m2;
+	//return m2;
 	//return sqrt(m2);
-	//return log(100000.0 + m2);
+	return log(0.01 + m2);
 }
 
 double *fft_init(void)

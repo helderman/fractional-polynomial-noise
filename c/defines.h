@@ -9,7 +9,7 @@
 #ifdef PIXELS
 #define XPIXELS PIXELS
 #else
-#define XPIXELS 1024
+#define XPIXELS (256*32)
 #endif
 #endif
 
@@ -18,7 +18,7 @@
 #ifdef PIXELS
 #define YPIXELS PIXELS
 #else
-#define YPIXELS 1024
+#define YPIXELS (256*32)
 #endif
 #endif
 
@@ -27,7 +27,7 @@
 #ifdef UNITS
 #define XUNITS UNITS
 #else
-#define XUNITS 32
+#define XUNITS 256
 #endif
 #endif
 
@@ -36,6 +36,10 @@
 #ifdef UNITS
 #define YUNITS UNITS
 #else
-#define YUNITS 32
+#define YUNITS 256
 #endif
 #endif
+
+/* Tiling of noise units */
+#define XTILE(x) ((x) % (XUNITS) + ((x) < 0 ? (XUNITS) : 0))
+#define YTILE(y) ((y) % (YUNITS) + ((y) < 0 ? (YUNITS) : 0))

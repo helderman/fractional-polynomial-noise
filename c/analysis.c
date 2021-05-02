@@ -93,9 +93,9 @@ void replicate(const char *algorithm, int samples)
 	{
 		for (x = 0; x < XPIXELS; x++)
 		{
-			double h = noise(
-				(double)x * XUNITS / XPIXELS,
-				(double)y * YUNITS / YPIXELS);
+			double ux = (double)x * XUNITS / XPIXELS;
+			double uy = (double)y * YUNITS / YPIXELS;
+			double h = noise(ux, uy);
 #ifdef SPECTRUM
 			*p++ = h;
 		}
@@ -145,7 +145,7 @@ int main(int argc, char *argv[])
 	srand(SEED);
 	for (i = 0; i < samples; i++)
 	{
-		if (i % 10 == 0) fprintf(stderr, "\r%d/%d", i, samples);
+		fprintf(stderr, "\r%d/%d", i, samples);
 		replicate(algorithm, samples);
 	}
 	fprintf(stderr, "\r%d/%d\n", samples, samples);
